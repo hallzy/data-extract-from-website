@@ -11,9 +11,12 @@ Emails File
 
 Just list each email address that will receive the email on a separate line.
 
+This file also allows comments
+
 sample:
 
 ```
+# Comment
 user1@domain.com
 user2@domain.com
 user3@domain.com
@@ -24,9 +27,12 @@ Products to look for File
 
 Just list each item on a separate line.
 
+This file also allows comments
+
 sample:
 
 ```
+# Comment
 Any Plain Steel Wheels
 Car Doors
 Hoods
