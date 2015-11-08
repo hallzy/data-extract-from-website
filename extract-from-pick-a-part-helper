@@ -48,16 +48,19 @@ do
 
 done
 
+COUNT=0
 echo "Sending emails..."
 for EMAIL in "${EMAILS[@]}"
 do
+  COUNT=$((COUNT + 1))
   # Skip comments when parsing
-  [[ ${EMAIL:0:1} == "#" ]] && continue
+  [[ ${EMAIL:0:1} == "#" ]] && echo "Line #$COUNT is Commented"  && continue
   # Skip empty lines when parsing
   [[ ${EMAIL:1:1} == "" ]] && continue
 
   mutt -s "Pick a Part Alert: $DATE_RANGE" $EMAIL < foundProducts
-  echo "Sent to $EMAIL"
+  # -n removes trailing newlines
+  echo -n "Sent to $EMAIL"
 done
 
 # Cleanup
