@@ -1,0 +1,72 @@
+#!/bin/bash
+
+cd ~/Documents/git-repos/remote-github/data-extract-from-website
+
+git pull
+
+# Unset globbing
+set -f
+
+# Now readarray delimits with newlines
+IFS='
+'
+
+readarray PRODUCTS < ./products-to-look-for
+readarray EMAILS < ./emails
+
+touch fetchedPage
+rm -rf fetchedPage
+
+echo "Downloading webpage: http://www.pickapart.ca/"
+wget -O fetchedPage "http://www.pickapart.ca/"
+
+DATE_RANGE=$(command grep -Eo '[[:alpha:]]{3} [[:digit:]]{2}, [[:digit:]]{4} - [[:alpha:]]{3} [[:digit:]]{2}, [[:digit:]]{4}' fetchedPage)
+
+# -e lets the \n act as a newline character
+echo -e "Pick a Part has the following on sale from $DATE_RANGE:\n" > foundProducts
+
+
+# Delete all html before: <div class-"specials-header">
+awk 'p; /<div class="specials-header">/ {p=1}' fetchedPage > awk1
+# Delete all html after: </article>
+awk '/<\/article>/{exit}1' awk1 > awk2
+
+echo "Searching webpage for items of interest:"
+for PRODUCT in "${PRODUCTS[@]}"
+do
+  # Skip comments when parsing
+  [[ ${PRODUCT:0:1} == "#" ]] && continue
+  # Skip empty lines when parsing
+  [[ ${PRODUCT:1:1} == "" ]] && continue
+
+  grep -qi $PRODUCT awk2
+  if [[ $? = 0 ]]; then
+    # -n removes trailing newlines
+    echo -n "- $PRODUCT" >> foundProducts
+    echo -n "Found:  $PRODUCT"
+  fi
+
+done
+
+echo "Sending emails..."
+for EMAIL in "${EMAILS[@]}"
+do
+  # Skip comments when parsing
+  [[ ${EMAIL:0:1} == "#" ]] && continue
+  # Skip empty lines when parsing
+  [[ ${EMAIL:1:1} == "" ]] && continue
+
+  mutt -s "Pick a Part Alert: $DATE_RANGE" $EMAIL < foundProducts
+  echo "Sent to $EMAIL"
+done
+
+# Cleanup
+echo "cleanup..."
+rm -rf fetchedPage
+rm -rf awk1
+rm -rf awk2
+rm -rf foundProducts
+
+unset IFS
+set +f
+
