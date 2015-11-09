@@ -82,6 +82,7 @@ sed -i "s@<br>@ - @g" tdtags
 
 # Put the fetched items from tdtags into an array
 readarray FETCHED_ITEMS < ./tdtags
+NUM_FOUND=0
 
 echo "Searching webpage for items of interest:"
 for PRODUCT in "${PRODUCTS[@]}"
@@ -101,6 +102,7 @@ do
     if [[ $FETCHED_ITEM =~ $PRODUCT ]]; then
       echo -n "- $FETCHED_ITEM" >> foundProducts
       echo -n "Found:  $FETCHED_ITEM"
+      ((NUM_FOUND++))
     fi
   done
 
@@ -110,6 +112,7 @@ COUNT=0
 echo "Sending emails..."
 for EMAIL in "${EMAILS[@]}"
 do
+  # Used to echo if the line is commented
   COUNT=$((COUNT + 1))
   # Skip comments when parsing
   # Also if it is commented print to the log and console that it is commented.
@@ -117,7 +120,14 @@ do
   # Skip empty lines when parsing
   [[ ${EMAIL:1:1} == "" ]] && continue
 
-  mutt -s "Pick a Part Alert: $DATE_RANGE" $EMAIL < foundProducts
+  # If more than one item was found, send an email saying that x was found
+  if [[ $NUM_FOUND > 0 ]]; then
+    mutt -s "Pick a Part Alert: $DATE_RANGE" $EMAIL < foundProducts
+
+    # otherwise, Send an email saying that there is no items.
+  else
+    echo "Pick a Part has nothing on sale this week ($DATE_RANGE) that you are looking for." | mutt -s "Pick a Part Alert: $DATE_RANGE" $EMAIL
+  fi
   # -n removes trailing newlines
   echo -n "Sent to $EMAIL"
 done
