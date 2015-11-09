@@ -9,6 +9,9 @@ set -f
 IFS='
 '
 
+# No case sensitivity for string matching
+shopt -s nocasematch
+
 readarray PRODUCTS < ./products-to-look-for
 readarray EMAILS < ./emails
 
@@ -24,10 +27,61 @@ DATE_RANGE=$(command grep -Eo '[[:alpha:]]{3} [[:digit:]]{2}, [[:digit:]]{4} - [
 echo -e "Pick a Part has the following on sale from $DATE_RANGE:\n" > foundProducts
 
 
-# Delete all html before: <div class-"specials-header">
-awk 'p; /<div class="specials-header">/ {p=1}' fetchedPage > awk1
-# Delete all html after: </article>
-awk '/<\/article>/{exit}1' awk1 > awk2
+
+# At the end of all td tags start a new line.
+sed -i "s@</td>@</td>\n@g" fetchedPage
+
+# Open fetchedPage
+declare -a ARRAY
+exec 10<&0
+fileName="fetchedPage"
+exec < $fileName
+let count=0
+
+# Each line gets stored in an array.
+while read LINE; do
+  ARRAY[$count]=$LINE
+  ((count++))
+done
+
+exec 0<&10 10<&-
+
+# Used to find the lines we need.
+regex="<td align='center' valign='top'>[[:print:]]*</td>"
+
+touch tdtags
+rm -rf tdtags
+touch tdtags
+
+ELEMENTS=${#ARRAY[@]}
+firstLine=0
+
+
+# make tdtags file that contains only the useful information.
+for((i=0;i<$ELEMENTS;i++)); do
+  if [[ ${ARRAY[${i}]} =~ $regex ]] ; then
+    if [[ $firstLine<1 ]]; then
+      echo ${BASH_REMATCH[0]} > tdtags
+      let firstLine=$firstLine+1
+    else
+      echo ${BASH_REMATCH[0]} >> tdtags
+    fi
+  fi
+done
+
+# Remove all unwanted values from tdtags
+# This generates a file tdtags that contains the item on one line, followed by
+# the price on the second line.
+# remove "<td align='center' valign='top'>" from each line
+sed -i "s@<td align='center' valign='top'>@@g" tdtags
+# remove </td> tags
+sed -i "s@</td>@@g" tdtags
+# removes the <br> tag and replaces it with " - ". That way the product name and
+# price are separated by a " - "
+sed -i "s@<br>@ - @g" tdtags
+
+# Put the fetched items from tdtags into an array
+readarray FETCHED_ITEMS < ./tdtags
 
 echo "Searching webpage for items of interest:"
 for PRODUCT in "${PRODUCTS[@]}"
@@ -37,12 +91,18 @@ do
   # Skip empty lines when parsing
   [[ ${PRODUCT:1:1} == "" ]] && continue
 
-  grep -qi $PRODUCT awk2
-  if [[ $? = 0 ]]; then
-    # -n removes trailing newlines
-    echo -n "- $PRODUCT" >> foundProducts
-    echo -n "Found:  $PRODUCT"
-  fi
+  # Remove trailing newline from the name
+  PRODUCT=$(echo ${PRODUCT} | tr -d '\n')
+
+  # See if PRODUCT is found on the webpage
+  # If it is, print it to the console, and append it to foundProducts file.
+  for FETCHED_ITEM in "${FETCHED_ITEMS[@]}"
+  do
+    if [[ $FETCHED_ITEM =~ $PRODUCT ]]; then
+      echo -n "- $FETCHED_ITEM" >> foundProducts
+      echo -n "Found:  $FETCHED_ITEM"
+    fi
+  done
 
 done
 
@@ -52,6 +112,7 @@ for EMAIL in "${EMAILS[@]}"
 do
   COUNT=$((COUNT + 1))
   # Skip comments when parsing
+  # Also if it is commented print to the log and console that it is commented.
   [[ ${EMAIL:0:1} == "#" ]] && echo "Line #$COUNT is Commented"  && continue
   # Skip empty lines when parsing
   [[ ${EMAIL:1:1} == "" ]] && continue
@@ -67,6 +128,7 @@ rm -rf fetchedPage
 rm -rf awk1
 rm -rf awk2
 rm -rf foundProducts
+rm -rf tdtags
 
 unset IFS
 set +f
