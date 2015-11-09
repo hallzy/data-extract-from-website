@@ -108,6 +108,9 @@ do
 
 done
 
+#remove duplicate entries in foundProducts
+awk '!a[$0]++' foundProducts > tmp && mv tmp foundProducts
+
 COUNT=0
 echo "Sending emails..."
 for EMAIL in "${EMAILS[@]}"
