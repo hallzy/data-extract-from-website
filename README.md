@@ -52,12 +52,16 @@ Note: This file is case insensitive.
 Cronjob
 -------
 
-Since this website updates its page with new "on sale items" every week on ??,
+Since this website updates its page with new "on sale items" every week on Fridays at ~6pm,
 use the following cronjob settings in order to run this:
 
 ```bash
-* * * * * /PATH/TO/extract-from-pick-a-part
+0 18 * * 5 /PATH/TO/extract-from-pick-a-part
 ```
+
+Note: 0 is the minute of the day, 18 is the hour of the day (18 is 6pm), * means
+ever any day of the month, * means any month, 5 means Fridays. Therefore the script
+runs every Friday at 6pm.
 
 Note: I do not yet know when to update. The example above runs the script once
 every minute.
