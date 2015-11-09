@@ -1,5 +1,7 @@
 #!/bin/bash
 
+git pull
+
 cd ~/Documents/git-repos/remote-github/data-extract-from-website
 
 DATE_VAR=$(date +%F_%H:%M:%S)

@@ -2,8 +2,6 @@
 
 cd ~/Documents/git-repos/remote-github/data-extract-from-website
 
-git pull
-
 # Unset globbing
 set -f
 
