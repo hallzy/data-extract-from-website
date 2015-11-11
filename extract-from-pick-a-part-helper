@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Pre Script Settings#{{{
 cd ~/Documents/git-repos/remote-github/data-extract-from-website
 
 # Unset globbing
@@ -11,6 +12,9 @@ IFS='
 
 # No case sensitivity for string matching
 shopt -s nocasematch
+#}}}
+
+# Get Products that are on sale#{{{
 
 readarray PRODUCTS < ./products-to-look-for
 readarray EMAILS < ./emails
@@ -31,20 +35,22 @@ echo -e "Pick a Part has the following on sale from $DATE_RANGE:\n" > foundProdu
 # At the end of all td tags start a new line.
 sed -i "s@</td>@</td>\n@g" fetchedPage
 
-# Open fetchedPage
+# Open fetchedPage#{{{
 declare -a ARRAY
 exec 10<&0
 fileName="fetchedPage"
 exec < $fileName
 let count=0
-
-# Each line gets stored in an array.
+#}}}
+# Each line gets stored in an array.#{{{
 while read LINE; do
   ARRAY[$count]=$LINE
   ((count++))
 done
-
+#}}}
+# Close fetchedPage#{{{
 exec 0<&10 10<&-
+#}}}
 
 # Used to find the lines we need.
 regex="<td align='center' valign='top'>[[:print:]]*</td>"
@@ -82,7 +88,7 @@ sed -i "s@<br>@ - @g" tdtags
 
 # Put the fetched items from tdtags into an array
 readarray FETCHED_ITEMS < ./tdtags
-NUM_FOUND=0
+NUM_PRODUCTS_FOUND=0
 
 echo "Searching webpage for items of interest:"
 for PRODUCT in "${PRODUCTS[@]}"
@@ -102,7 +108,7 @@ do
     if [[ $FETCHED_ITEM =~ $PRODUCT ]]; then
       echo -n "- $FETCHED_ITEM" >> foundProducts
       echo -n "Found:  $FETCHED_ITEM"
-      ((NUM_FOUND++))
+      ((NUM_PRODUCTS_FOUND++))
     fi
   done
 
@@ -110,7 +116,130 @@ done
 
 #remove duplicate entries in foundProducts
 awk '!a[$0]++' foundProducts > tmp && mv tmp foundProducts
+#}}}
 
+# Find new or missing cars on the lot#{{{
+echo "Downloading car list from webpage: http://parts.pickapart.ca/index.php"
+# This submits a form on pickapart.ca to get a list of saturns in the lot.
+curl --form-string 'md=submit' --form-string 'model=Saturn' 'http://parts.pickapart.ca/index.php' > saturn-car-list
+
+dos2unix saturn-car-list
+
+# -e lets the \n act as a newline character
+#echo -e "\n\nThese Cars:\n" >> foundProducts
+echo -e "\n\n" >> foundProducts
+
+
+# Open fetchedPage
+declare -a ARRAY
+exec 10<&0
+fileName="saturn-car-list"
+exec < $fileName
+let count=0
+
+# Each line gets stored in an array.
+while read LINE; do
+  ARRAY[$count]=$LINE
+  ((count++))
+done
+
+exec 0<&10 10<&-
+
+# Used to find the lines we need.
+regex="<tr [[:print:]]*<a href=\"http[[:print:]]*</tr>"
+
+touch tdtags
+rm -rf tdtags
+touch tdtags
+
+ELEMENTS=${#ARRAY[@]}
+firstLine=0
+
+
+# make tdtags file that contains only the useful information.
+for((i=0;i<$ELEMENTS;i++)); do
+  if [[ ${ARRAY[${i}]} =~ $regex ]] ; then
+    if [[ $firstLine<1 ]]; then
+      echo ${BASH_REMATCH[0]} > tdtags
+      let firstLine=$firstLine+1
+    else
+      echo ${BASH_REMATCH[0]} >> tdtags
+    fi
+  fi
+done
+
+# At the end of all td tags start a new line.
+sed -i "s@</td>@</td>\n@g" tdtags
+
+
+# Delete all lines containing <tr bgcolor=
+sed -i '/<tr bgcolor=/d' tdtags
+
+# remove "<td>" from each line
+sed -i "s@<td>@@g" tdtags
+# remove "</td>" from each line
+sed -i "s@</td>@@g" tdtags
+# remove "</tr>" from each line
+sed -i "s@</tr>@@g" tdtags
+
+
+# Open tdtags
+declare -a CAR_ARRAY
+exec 10<&0
+fileName="tdtags"
+exec < $fileName
+let count=0
+
+# Each line gets stored in an array.
+while read LINE; do
+  CAR_ARRAY[$count]=$LINE
+  ((count++))
+done
+
+exec 0<&10 10<&-
+
+# Car array now contains all the car information for saturns.
+# Note that bash does not have 2D arrays, so it is stored in a 1D array.
+
+# index 0 = Date added
+# index 1 = Make
+# index 2 = Model
+# index 3 = Year
+# index 4 = Body Style (ex. 4DSDN, 2DCPE etc)
+# index 5 = Engine
+# index 6 = Transmission
+# index 7 = Description
+# index 8 = Row # (The row at the lot that the car is in)
+# index 9 = Stock #
+# index 10 restarts for a new car
+
+# number of cars = size of array / 10
+num_of_cars=$((count / 10))
+
+echo "Number of cars is: $num_of_cars"
+
+readarray NUMBER_OF_CARS_PREVIOUS < ./number_of_cars
+
+echo "Previous num of cars is: ${NUMBER_OF_CARS_PREVIOUS[0]}"
+
+diff=$((NUMBER_OF_CARS_PREVIOUS[0] - num_of_cars))
+
+if (( ${NUMBER_OF_CARS_PREVIOUS[0]} > $num_of_cars )); then
+  echo "$diff less car(s) today"
+  echo "$diff less car(s) today" >> foundProducts
+  echo "$num_of_cars" > number_of_cars
+elif (( ${NUMBER_OF_CARS_PREVIOUS[0]} < $num_of_cars )); then
+  echo "$diff more car(s) today"
+  echo "$diff less car(s) today" >> foundProducts
+  echo "$num_of_cars" > number_of_cars
+else
+  echo "No Change"
+fi
+#}}}
+
+# Email#{{{
+
+# Used to echo if an email is commented
 COUNT=0
 echo "Sending emails..."
 for EMAIL in "${EMAILS[@]}"
@@ -124,7 +253,7 @@ do
   [[ ${EMAIL:1:1} == "" ]] && continue
 
   # If more than one item was found, send an email saying that x was found
-  if [[ $NUM_FOUND > 0 ]]; then
+  if [[ $NUM_PRODUCTS_FOUND > 0 ]]; then
     mutt -s "Pick a Part Alert: $DATE_RANGE" $EMAIL < foundProducts
 
     # otherwise, Send an email saying that there is no items.
@@ -134,15 +263,18 @@ do
   # -n removes trailing newlines
   echo -n "Sent to $EMAIL"
 done
+#}}}
 
-# Cleanup
+# Cleanup#{{{
 echo "cleanup..."
 rm -rf fetchedPage
 rm -rf awk1
 rm -rf awk2
 rm -rf foundProducts
 rm -rf tdtags
+rm -rf saturn-car-list
 
 unset IFS
 set +f
+#}}}
 
