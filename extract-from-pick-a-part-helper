@@ -1,5 +1,12 @@
 #!/bin/bash
 
+DEBUG=0
+
+
+if [[ "$1" == "DEBUG" ]]; then
+  DEBUG=1
+fi
+
 # Pre Script Settings#{{{
 cd ~/Documents/git-repos/remote-github/data-extract-from-website
 
@@ -18,6 +25,20 @@ shopt -s nocasematch
 
 readarray PRODUCTS < ./products-to-look-for
 readarray EMAILS < ./emails
+
+# If debug is on, remove all emails except the first (which is mine)
+NUM_OF_EMAILS=${#EMAILS[@]}
+if (( $DEBUG == 1 )); then
+  debug_count=0
+  for((i=0;i<$NUM_OF_EMAILS;i++)); do
+    echo "debug_count = $debug_count"
+    if (( $debug_count > 0 )); then
+      EMAILS[$i]=""
+      echo "EMAILS[i] = $EMAILS[$i]"
+    fi
+    ((debug_count++))
+  done
+fi
 
 touch fetchedPage
 rm -rf fetchedPage
@@ -266,13 +287,20 @@ done
 #}}}
 
 # Cleanup#{{{
-echo "cleanup..."
-rm -rf fetchedPage
-rm -rf awk1
-rm -rf awk2
-rm -rf foundProducts
-rm -rf tdtags
-rm -rf saturn-car-list
+if (( $DEBUG == 1 )); then
+  mkdir debug
+
+  mv fetchedPage debug/
+  mv foundProducts debug/
+  mv tdtags debug/
+  mv saturn-car-list debug/
+else
+  echo "cleanup..."
+  rm -rf fetchedPage
+  rm -rf foundProducts
+  rm -rf tdtags
+  rm -rf saturn-car-list
+fi
 
 unset IFS
 set +f
