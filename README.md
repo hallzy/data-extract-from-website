@@ -49,6 +49,22 @@ item on the sample list.
 
 Note: This file is case insensitive.
 
+num_of_cars
+-----------
+
+A non version controlled file that only contains the number of cars that meet
+the set of requirements that are on the lot.
+
+sample:
+
+```
+11
+```
+
+This file is populated automatically on script execution, but it is recommended
+to create and populate it manually at first (otherwise you will get your first
+email which will contain all the cars on the lot that meet the requirements).
+
 Cronjob
 -------
 
