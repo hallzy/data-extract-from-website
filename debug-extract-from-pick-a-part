@@ -11,5 +11,5 @@ LOG_FILE_NAME=$DATE_VAR-data-extract-from-website.log
 PATH_TO_LOG_FILE=./logs/$LOG_FILE_NAME
 
 mkdir -p logs
-time ./extract-from-pick-a-part-helper | tee $PATH_TO_LOG_FILE
+time ./extract-from-pick-a-part-helper DEBUG | tee $PATH_TO_LOG_FILE
 
