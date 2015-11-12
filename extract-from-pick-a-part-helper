@@ -250,8 +250,9 @@ if (( ${NUMBER_OF_CARS_PREVIOUS[0]} > $num_of_cars )); then
   echo "$diff less car(s) today" >> foundProducts
   echo "$num_of_cars" > number_of_cars
 elif (( ${NUMBER_OF_CARS_PREVIOUS[0]} < $num_of_cars )); then
+  diff=$((diff*-1))
   echo "$diff more car(s) today"
-  echo "$diff less car(s) today" >> foundProducts
+  echo "$diff more car(s) today" >> foundProducts
   echo "$num_of_cars" > number_of_cars
 else
   echo "No Change"
@@ -292,13 +293,11 @@ if (( $DEBUG == 1 )); then
 
   mv fetchedPage debug/
   mv foundProducts debug/
-  mv tdtags debug/
   mv saturn-car-list debug/
 else
   echo "cleanup..."
   rm -rf fetchedPage
   rm -rf foundProducts
-  rm -rf tdtags
   rm -rf saturn-car-list
 fi
 
