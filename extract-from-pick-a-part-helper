@@ -283,7 +283,68 @@ exec 0<&10 10<&-
 # number of cars = size of array / 10
 num_of_cars_current=$car_stock_array_count
 
-readarray LAST_WEEK_CAR_STOCK_NUMBERS < ./stock-numbers
+
+# Open tdtags
+declare -a OLD_CAR_MODEL
+declare -a OLD_CAR_YEAR
+declare -a OLD_CAR_BODY_STYLE
+declare -a OLD_CAR_ENGINE
+declare -a OLD_CAR_TRANSMISSION
+declare -a OLD_CAR_DESCRIPTION
+declare -a OLD_CAR_STOCK_NUMBERS
+exec 10<&0
+fileName="old-tdtags"
+exec < $fileName
+let old_car_model_count=0
+let old_car_year_count=0
+let old_car_body_style_count=0
+let old_car_engine_count=0
+let old_car_transmission_count=0
+let old_car_description_count=0
+let old_car_stock_array_count=0
+
+let count=0
+# CAR_ARRAY now contains all the car information for saturns.
+# Note that bash does not have 2D arrays, so it is stored in a 1D array.
+
+while read LINE; do
+  # Get car models
+  if (( $count % 10 == 2 )); then
+    OLD_CAR_MODEL[$old_car_model_count]=$LINE
+    ((old_car_model_count++))
+  # Get car year
+  elif (( $count % 10 == 3 )); then
+    OLD_CAR_YEAR[$old_car_year_count]=$LINE
+    ((old_car_year_count++))
+  # Get car body styles
+  elif (( $count % 10 == 4 )); then
+    OLD_CAR_BODY_STYLE[$old_car_body_style_count]=$LINE
+    ((old_car_body_style_count++))
+  # Get car engine type
+  elif (( $count % 10 == 5 )); then
+    OLD_CAR_ENGINE[$old_car_engine_count]=$LINE
+    ((old_car_engine_count++))
+  # Get car transmission type
+  elif (( $count % 10 == 6 )); then
+    OLD_CAR_TRANSMISSION[$old_car_transmission_count]=$LINE
+    ((old_car_transmission_count++))
+  # Get car description
+  elif (( $count % 10 == 7 )); then
+    OLD_CAR_DESCRIPTION[$old_car_description_count]=$LINE
+    ((old_car_description_count++))
+  # Get stock numbers
+  elif (( $count % 10 == 9 )); then
+    OLD_CAR_STOCK_NUMBERS[$old_car_stock_array_count]=$LINE
+    ((old_car_stock_array_count++))
+  fi
+
+  ((count++))
+done
+
+exec 0<&10 10<&-
+
+
+
 
 
 let found=0
@@ -294,9 +355,9 @@ declare -a NEW_CARS_ARRAY
 # Find New Cars
 for NEW_NUMBER in "${CAR_STOCK_NUMBERS[@]}"
 do
-  for OLD_NUMBER in "${LAST_WEEK_CAR_STOCK_NUMBERS[@]}"
+  for OLD_NUMBER in "${OLD_CAR_STOCK_NUMBERS[@]}"
   do
-    OLD_NUMBER=$(echo ${OLD_NUMBER} | tr -d '\n')
+    # OLD_NUMBER=$(echo ${OLD_NUMBER} | tr -d '\n')
     # Remove trailing newlines
     if [[ $NEW_NUMBER == "$OLD_NUMBER" ]]; then
       # new number exists in old number
@@ -321,9 +382,9 @@ let old_car_array_count=0
 declare -a OLD_CARS_ARRAY
 
 # Find Cars that have been removed
-for OLD_NUMBER in "${LAST_WEEK_CAR_STOCK_NUMBERS[@]}"
+for OLD_NUMBER in "${OLD_CAR_STOCK_NUMBERS[@]}"
 do
-  OLD_NUMBER=$(echo ${OLD_NUMBER} | tr -d '\n')
+  # OLD_NUMBER=$(echo ${OLD_NUMBER} | tr -d '\n')
   for NEW_NUMBER in "${CAR_STOCK_NUMBERS[@]}"
   do
     # Remove trailing newlines
@@ -335,7 +396,7 @@ do
   done
   # If the number was not found, we have a new car
   if (( "$found" == "0" )); then
-    echo "Old Car: $count"
+    echo "Old Car: $count - $OLD_NUMBER"
     OLD_CARS_ARRAY[$old_car_array_count]=$count
     ((old_car_array_count++))
   fi
@@ -352,10 +413,17 @@ do
   echo "${CAR_STOCK_NUMBERS[${NEW_CAR}]}: ${CAR_YEAR[${NEW_CAR}]} ${CAR_MODEL[${NEW_CAR}]} - ${CAR_BODY_STYLE[${NEW_CAR}]} - ${CAR_ENGINE[${NEW_CAR}]} - ${CAR_TRANSMISSION[${NEW_CAR}]} Transmission - ${CAR_DESCRIPTION[${NEW_CAR}]}" >> email-body
 done
 
-# for OLD_CAR in "${OLD_CARS_ARRAY[@]}"
-# do
-#   echo "${CAR_STOCK_NUMBERS[${OLD_CAR}]}: ${CAR_YEAR[${OLD_CAR}]} ${CAR_MODEL[${OLD_CAR}]} - ${CAR_BODY_STYLE[${OLD_CAR}]} - ${CAR_ENGINE[${OLD_CAR}]} - ${CAR_TRANSMISSION[${OLD_CAR}]} Transmission - ${CAR_DESCRIPTION[${OLD_CAR}]}" >> email-body
-# done
+if (( "$old_car_array_count" > "0" )); then
+  if (( "$new_car_array_count" > "0" )); then
+    echo -e "\n" >> email-body
+  fi
+  echo "Cars that have been removed from the lot:" >> email-body
+fi
+
+for OLD_CAR in "${OLD_CARS_ARRAY[@]}"
+do
+  echo "${OLD_CAR_STOCK_NUMBERS[${OLD_CAR}]}: ${OLD_CAR_YEAR[${OLD_CAR}]} ${OLD_CAR_MODEL[${OLD_CAR}]} - ${OLD_CAR_BODY_STYLE[${OLD_CAR}]} - ${OLD_CAR_ENGINE[${OLD_CAR}]} - ${OLD_CAR_TRANSMISSION[${OLD_CAR}]} Transmission - ${OLD_CAR_DESCRIPTION[${OLD_CAR}]}" >> email-body
+done
 
 # echo "Number of cars is: $num_of_cars"
 #
