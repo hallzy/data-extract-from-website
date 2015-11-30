@@ -51,7 +51,7 @@ wget -O fetchedPage "http://www.pickapart.ca/"
 DATE_RANGE=$(command grep -Eo '[[:alpha:]]{3} [[:digit:]]{2}, [[:digit:]]{4} - [[:alpha:]]{3} [[:digit:]]{2}, [[:digit:]]{4}' fetchedPage)
 
 # -e lets the \n act as a newline character
-echo -e "Pick a Part has the following on sale from $DATE_RANGE:\n" > foundProducts
+echo -e "Pick a Part has the following on sale from $DATE_RANGE:\n" > email-body
 
 
 
@@ -125,11 +125,11 @@ do
   PRODUCT=$(echo ${PRODUCT} | tr -d '\n')
 
   # See if PRODUCT is found on the webpage
-  # If it is, print it to the console, and append it to foundProducts file.
+  # If it is, print it to the console, and append it to email-body file.
   for FETCHED_ITEM in "${FETCHED_ITEMS[@]}"
   do
     if [[ $FETCHED_ITEM =~ $PRODUCT ]]; then
-      echo -n "- $FETCHED_ITEM" >> foundProducts
+      echo -n "- $FETCHED_ITEM" >> email-body
       echo -n "Found:  $FETCHED_ITEM"
       ((NUM_PRODUCTS_FOUND++))
     fi
@@ -137,8 +137,8 @@ do
 
 done
 
-#remove duplicate entries in foundProducts
-awk '!a[$0]++' foundProducts > tmp && mv tmp foundProducts
+#remove duplicate entries in email-body
+awk '!a[$0]++' email-body > tmp && mv tmp email-body
 #}}}
 
 # Find new or missing cars on the lot#{{{
@@ -149,8 +149,8 @@ curl --form-string 'md=submit' --form-string 'model=Saturn' 'http://parts.pickap
 dos2unix saturn-car-list
 
 # -e lets the \n act as a newline character
-#echo -e "\n\nThese Cars:\n" >> foundProducts
-echo -e "\n\n" >> foundProducts
+#echo -e "\n\nThese Cars:\n" >> email-body
+echo -e "\n\n" >> email-body
 
 
 # Open fetchedPage
@@ -207,21 +207,26 @@ sed -i "s@</tr>@@g" tdtags
 
 
 # Open tdtags
-declare -a CAR_ARRAY
+declare -a CAR_MODEL
+declare -a CAR_YEAR
+declare -a CAR_BODY_STYLE
+declare -a CAR_ENGINE
+declare -a CAR_TRANSMISSION
+declare -a CAR_DESCRIPTION
+declare -a CAR_STOCK_NUMBERS
 exec 10<&0
 fileName="tdtags"
 exec < $fileName
+let car_model_count=0
+let car_year_count=0
+let car_body_style_count=0
+let car_engine_count=0
+let car_transmission_count=0
+let car_description_count=0
+let car_stock_array_count=0
+
 let count=0
-
-# Each line gets stored in an array.
-while read LINE; do
-  CAR_ARRAY[$count]=$LINE
-  ((count++))
-done
-
-exec 0<&10 10<&-
-
-# Car array now contains all the car information for saturns.
+# CAR_ARRAY now contains all the car information for saturns.
 # Note that bash does not have 2D arrays, so it is stored in a 1D array.
 
 # index 0 = Date added
@@ -234,31 +239,146 @@ exec 0<&10 10<&-
 # index 7 = Description
 # index 8 = Row # (The row at the lot that the car is in)
 # index 9 = Stock #
-# index 10 restarts for a new car
+
+# index 10 = Date added for the next car
+# etc
+# Each line gets stored in an array.
+
+while read LINE; do
+  # Get car models
+  if (( $count % 10 == 2 )); then
+    CAR_MODEL[$car_model_count]=$LINE
+    ((car_model_count++))
+  # Get car year
+  elif (( $count % 10 == 3 )); then
+    CAR_YEAR[$car_year_count]=$LINE
+    ((car_year_count++))
+  # Get car body styles
+  elif (( $count % 10 == 4 )); then
+    CAR_BODY_STYLE[$car_body_style_count]=$LINE
+    ((car_body_style_count++))
+  # Get car engine type
+  elif (( $count % 10 == 5 )); then
+    CAR_ENGINE[$car_engine_count]=$LINE
+    ((car_engine_count++))
+  # Get car transmission type
+  elif (( $count % 10 == 6 )); then
+    CAR_TRANSMISSION[$car_transmission_count]=$LINE
+    ((car_transmission_count++))
+  # Get car description
+  elif (( $count % 10 == 7 )); then
+    CAR_DESCRIPTION[$car_description_count]=$LINE
+    ((car_description_count++))
+  # Get stock numbers
+  elif (( $count % 10 == 9 )); then
+    CAR_STOCK_NUMBERS[$car_stock_array_count]=$LINE
+    ((car_stock_array_count++))
+  fi
+
+  ((count++))
+done
+
+exec 0<&10 10<&-
 
 # number of cars = size of array / 10
-num_of_cars=$((count / 10))
+num_of_cars_current=$car_stock_array_count
 
-echo "Number of cars is: $num_of_cars"
+readarray LAST_WEEK_CAR_STOCK_NUMBERS < ./stock-numbers
 
-readarray NUMBER_OF_CARS_PREVIOUS < ./number_of_cars
 
-echo "Previous num of cars is: ${NUMBER_OF_CARS_PREVIOUS[0]}"
+let found=0
+let count=0
+let new_car_array_count=0
+declare -a NEW_CARS_ARRAY
 
-diff=$((NUMBER_OF_CARS_PREVIOUS[0] - num_of_cars))
+# Find New Cars
+for NEW_NUMBER in "${CAR_STOCK_NUMBERS[@]}"
+do
+  for OLD_NUMBER in "${LAST_WEEK_CAR_STOCK_NUMBERS[@]}"
+  do
+    OLD_NUMBER=$(echo ${OLD_NUMBER} | tr -d '\n')
+    # Remove trailing newlines
+    if [[ $NEW_NUMBER == "$OLD_NUMBER" ]]; then
+      # new number exists in old number
+      found=1
+      break
+    fi
+  done
+  # If the number was not found, we have a new car
+  if (( "$found" == "0" )); then
+    echo "New Car: $count - $NEW_NUMBER"
+    NEW_CARS_ARRAY[$new_car_array_count]=$count
+    ((new_car_array_count++))
+  fi
+  ((count++))
+  found=0
+done
 
-if (( ${NUMBER_OF_CARS_PREVIOUS[0]} > $num_of_cars )); then
-  echo "$diff less car(s) today"
-  echo "$diff less car(s) today" >> foundProducts
-  echo "$num_of_cars" > number_of_cars
-elif (( ${NUMBER_OF_CARS_PREVIOUS[0]} < $num_of_cars )); then
-  diff=$((diff*-1))
-  echo "$diff more car(s) today"
-  echo "$diff more car(s) today" >> foundProducts
-  echo "$num_of_cars" > number_of_cars
-else
-  echo "No Change"
+
+let found=0
+let count=0
+let old_car_array_count=0
+declare -a OLD_CARS_ARRAY
+
+# Find Cars that have been removed
+for OLD_NUMBER in "${LAST_WEEK_CAR_STOCK_NUMBERS[@]}"
+do
+  OLD_NUMBER=$(echo ${OLD_NUMBER} | tr -d '\n')
+  for NEW_NUMBER in "${CAR_STOCK_NUMBERS[@]}"
+  do
+    # Remove trailing newlines
+    if [[ $NEW_NUMBER == "$OLD_NUMBER" ]]; then
+      # new number exists in old number
+      found=1
+      break
+    fi
+  done
+  # If the number was not found, we have a new car
+  if (( "$found" == "0" )); then
+    echo "Old Car: $count"
+    OLD_CARS_ARRAY[$old_car_array_count]=$count
+    ((old_car_array_count++))
+  fi
+  ((count++))
+  found=0
+done
+
+if (( "$new_car_array_count" > "0" )); then
+  echo "New Cars on the Lot:" >> email-body
 fi
+
+for NEW_CAR in "${NEW_CARS_ARRAY[@]}"
+do
+  echo "${CAR_STOCK_NUMBERS[${NEW_CAR}]}: ${CAR_YEAR[${NEW_CAR}]} ${CAR_MODEL[${NEW_CAR}]} - ${CAR_BODY_STYLE[${NEW_CAR}]} - ${CAR_ENGINE[${NEW_CAR}]} - ${CAR_TRANSMISSION[${NEW_CAR}]} Transmission - ${CAR_DESCRIPTION[${NEW_CAR}]}" >> email-body
+done
+
+# for OLD_CAR in "${OLD_CARS_ARRAY[@]}"
+# do
+#   echo "${CAR_STOCK_NUMBERS[${OLD_CAR}]}: ${CAR_YEAR[${OLD_CAR}]} ${CAR_MODEL[${OLD_CAR}]} - ${CAR_BODY_STYLE[${OLD_CAR}]} - ${CAR_ENGINE[${OLD_CAR}]} - ${CAR_TRANSMISSION[${OLD_CAR}]} Transmission - ${CAR_DESCRIPTION[${OLD_CAR}]}" >> email-body
+# done
+
+# echo "Number of cars is: $num_of_cars"
+#
+# readarray NUMBER_OF_CARS_PREVIOUS < ./number_of_cars
+#
+# echo "Previous num of cars is: ${NUMBER_OF_CARS_PREVIOUS[0]}"
+#
+# diff=$((NUMBER_OF_CARS_PREVIOUS[0] - num_of_cars))
+#
+# if (( ${NUMBER_OF_CARS_PREVIOUS[0]} > $num_of_cars )); then
+#   echo "$diff less car(s) today"
+#   echo "$diff less car(s) today" >> email-body
+#   echo "$num_of_cars" > number_of_cars
+# elif (( ${NUMBER_OF_CARS_PREVIOUS[0]} < $num_of_cars )); then
+#   diff=$((diff*-1))
+#   echo "$diff more car(s) today"
+#   echo "$diff more car(s) today" >> email-body
+#   echo "$num_of_cars" > number_of_cars
+# else
+#   echo "No Change"
+# fi
+
+
 #}}}
 
 # Email#{{{
@@ -278,7 +398,7 @@ do
 
   # If more than one item was found, send an email saying that x was found
   if [[ $NUM_PRODUCTS_FOUND > 0 ]]; then
-    mutt -s "Pick a Part Alert: $DATE_RANGE" $EMAIL < foundProducts
+    mutt -s "Pick a Part Alert: $DATE_RANGE" $EMAIL < email-body
 
     # otherwise, Send an email saying that there is no items.
   else
@@ -294,12 +414,12 @@ if (( $DEBUG == 1 )); then
   mkdir debug
 
   mv fetchedPage debug/
-  mv foundProducts debug/
+  mv email-body debug/
   mv saturn-car-list debug/
 else
   echo "cleanup..."
   rm -rf fetchedPage
-  rm -rf foundProducts
+  rm -rf email-body
   rm -rf saturn-car-list
 fi
 
