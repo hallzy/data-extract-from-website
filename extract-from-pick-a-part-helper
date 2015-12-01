@@ -152,6 +152,7 @@ dos2unix saturn-car-list
 #echo -e "\n\nThese Cars:\n" >> email-body
 echo -e "\n\n" >> email-body
 
+# Remove all lines from html that are not necessary at all (before the parts we don't need, and after)#{{{
 
 # Open fetchedPage
 declare -a ARRAY
@@ -170,6 +171,9 @@ exec 0<&10 10<&-
 
 # Used to find the lines we need.
 regex="<tr [[:print:]]*<a href=\"http[[:print:]]*</tr>"
+#}}}
+
+# make tdtags file that contains only the useful information.#{{{
 
 touch tdtags
 rm -rf tdtags
@@ -179,7 +183,6 @@ ELEMENTS=${#ARRAY[@]}
 firstLine=0
 
 
-# make tdtags file that contains only the useful information.
 for((i=0;i<$ELEMENTS;i++)); do
   if [[ ${ARRAY[${i}]} =~ $regex ]] ; then
     if [[ $firstLine<1 ]]; then
@@ -204,7 +207,9 @@ sed -i "s@<td>@@g" tdtags
 sed -i "s@</td>@@g" tdtags
 # remove "</tr>" from each line
 sed -i "s@</tr>@@g" tdtags
+#}}}
 
+# Populate Arrays for the data for the new cars#{{{
 
 # Open tdtags
 declare -a CAR_MODEL
@@ -282,7 +287,9 @@ exec 0<&10 10<&-
 
 # number of cars = size of array / 10
 num_of_cars_current=$car_stock_array_count
+#}}}
 
+# Populate Arrays for the data for the old cars#{{{
 
 # Open tdtags
 declare -a OLD_CAR_MODEL
@@ -342,10 +349,9 @@ while read LINE; do
 done
 
 exec 0<&10 10<&-
+#}}}
 
-
-
-
+# Find new cars on the lot#{{{
 
 let found=0
 let count=0
@@ -374,7 +380,9 @@ do
   ((count++))
   found=0
 done
+#}}}
 
+#Find cars that have been removed#{{{
 
 let found=0
 let count=0
@@ -403,6 +411,9 @@ do
   ((count++))
   found=0
 done
+#}}}
+
+# Append new cars to email body#{{{
 
 if (( "$new_car_array_count" > "0" )); then
   echo "New Cars on the Lot:" >> email-body
@@ -412,6 +423,9 @@ for NEW_CAR in "${NEW_CARS_ARRAY[@]}"
 do
   echo "${CAR_STOCK_NUMBERS[${NEW_CAR}]}: ${CAR_YEAR[${NEW_CAR}]} ${CAR_MODEL[${NEW_CAR}]} - ${CAR_BODY_STYLE[${NEW_CAR}]} - ${CAR_ENGINE[${NEW_CAR}]} - ${CAR_TRANSMISSION[${NEW_CAR}]} Transmission - ${CAR_DESCRIPTION[${NEW_CAR}]}" >> email-body
 done
+#}}}
+
+# Append cars removed from the lot to the email body#{{{
 
 if (( "$old_car_array_count" > "0" )); then
   if (( "$new_car_array_count" > "0" )); then
@@ -424,28 +438,7 @@ for OLD_CAR in "${OLD_CARS_ARRAY[@]}"
 do
   echo "${OLD_CAR_STOCK_NUMBERS[${OLD_CAR}]}: ${OLD_CAR_YEAR[${OLD_CAR}]} ${OLD_CAR_MODEL[${OLD_CAR}]} - ${OLD_CAR_BODY_STYLE[${OLD_CAR}]} - ${OLD_CAR_ENGINE[${OLD_CAR}]} - ${OLD_CAR_TRANSMISSION[${OLD_CAR}]} Transmission - ${OLD_CAR_DESCRIPTION[${OLD_CAR}]}" >> email-body
 done
-
-# echo "Number of cars is: $num_of_cars"
-#
-# readarray NUMBER_OF_CARS_PREVIOUS < ./number_of_cars
-#
-# echo "Previous num of cars is: ${NUMBER_OF_CARS_PREVIOUS[0]}"
-#
-# diff=$((NUMBER_OF_CARS_PREVIOUS[0] - num_of_cars))
-#
-# if (( ${NUMBER_OF_CARS_PREVIOUS[0]} > $num_of_cars )); then
-#   echo "$diff less car(s) today"
-#   echo "$diff less car(s) today" >> email-body
-#   echo "$num_of_cars" > number_of_cars
-# elif (( ${NUMBER_OF_CARS_PREVIOUS[0]} < $num_of_cars )); then
-#   diff=$((diff*-1))
-#   echo "$diff more car(s) today"
-#   echo "$diff more car(s) today" >> email-body
-#   echo "$num_of_cars" > number_of_cars
-# else
-#   echo "No Change"
-# fi
-
+#}}}
 
 #}}}
 
