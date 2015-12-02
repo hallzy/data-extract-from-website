@@ -1,15 +1,31 @@
 #!/bin/bash
 
-rm -rf debug/
+# If there are no arguments, or the only argument is --email with a string after
+# it, then we can continue...
+if [[ -z "$1" || ( "$1" == "--cars-only" ) ]]
+then
+  rm -rf debug/
 
-git pull
+  git pull
 
-cd ~/Documents/git-repos/remote-github/data-extract-from-website
+  cd ~/Documents/git-repos/remote-github/data-extract-from-website
 
-DATE_VAR=$(date +%F_%H:%M:%S)
-LOG_FILE_NAME=$DATE_VAR-data-extract-from-website.log
-PATH_TO_LOG_FILE=./logs/$LOG_FILE_NAME
+  DATE_VAR=$(date +%F_%H:%M:%S)
+  LOG_FILE_NAME=$DATE_VAR-data-extract-from-website.log
+  PATH_TO_LOG_FILE=./logs/$LOG_FILE_NAME
 
-mkdir -p logs
-time ./extract-from-pick-a-part-helper DEBUG | tee $PATH_TO_LOG_FILE
+  mkdir -p logs
+  if [ "$1" == "--cars-only" ]
+  then
+    time ./extract-from-pick-a-part-helper DEBUG --cars-only | tee $PATH_TO_LOG_FILE
+  else
+    time ./extract-from-pick-a-part-helper DEBUG | tee $PATH_TO_LOG_FILE
+  fi
+
+else
+  echo " "
+  echo "Usage: If no options are given, this script will run fully"
+  echo "--cars-only : Will execute only the new car, or old car parts"
+  echo " "
+fi
 

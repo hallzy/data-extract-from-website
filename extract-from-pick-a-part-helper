@@ -1,12 +1,16 @@
 #!/bin/bash
 
-DEBUG=0
+touch email-body
 
 rm -rf old-tags
 cp tdtags old-tdtags
 
 if [[ "$1" == "DEBUG" ]]; then
   DEBUG=1
+  isCarOnly=$2
+else
+  DEBUG=0
+  isCarOnly=$1
 fi
 
 # Pre Script Settings#{{{
@@ -21,11 +25,7 @@ IFS='
 
 # No case sensitivity for string matching
 shopt -s nocasematch
-#}}}
 
-# Get Products that are on sale#{{{
-
-readarray PRODUCTS < ./products-to-look-for
 readarray EMAILS < ./emails
 
 # If debug is on, remove all emails except the first (which is mine)
@@ -49,6 +49,16 @@ echo "Downloading webpage: http://www.pickapart.ca/"
 wget -O fetchedPage "http://www.pickapart.ca/"
 
 DATE_RANGE=$(command grep -Eo '[[:alpha:]]{3} [[:digit:]]{2}, [[:digit:]]{4} - [[:alpha:]]{3} [[:digit:]]{2}, [[:digit:]]{4}' fetchedPage)
+
+#}}}
+
+# If no arguments were with the script, we can do this
+if [[ -z "$isCarOnly" ]]
+then
+# Get Products that are on sale#{{{
+
+readarray PRODUCTS < ./products-to-look-for
+
 
 # -e lets the \n act as a newline character
 echo -e "Pick a Part has the following on sale from $DATE_RANGE:\n" > email-body
@@ -137,9 +147,19 @@ do
 
 done
 
+# No products found.
+if [[ $NUM_PRODUCTS_FOUND == 0 ]]; then
+    echo "Pick a Part has nothing on sale this week ($DATE_RANGE) that you are looking for." > email-body
+fi
+
 #remove duplicate entries in email-body
 awk '!a[$0]++' email-body > tmp && mv tmp email-body
 #}}}
+else
+  # -1 will indicate that this part was never run, so I know whether or not to
+  # send an email.
+  NUM_PRODUCTS_FOUND=-1
+fi
 
 # Find new or missing cars on the lot#{{{
 echo "Downloading car list from webpage: http://parts.pickapart.ca/index.php"
@@ -149,8 +169,11 @@ curl --form-string 'md=submit' --form-string 'model=Saturn' 'http://parts.pickap
 dos2unix saturn-car-list
 
 # -e lets the \n act as a newline character
-#echo -e "\n\nThese Cars:\n" >> email-body
-echo -e "\n\n" >> email-body
+# Only do this if nothing is being printed for sale items, otherwise there will
+# be a large space at the top.
+if (( "$NUM_PRODUCTS_FOUND" != "-1" )); then
+  echo -e "\n\n" >> email-body
+fi
 
 # Remove all lines from html that are not necessary at all (before the parts we don't need, and after)#{{{
 
@@ -438,36 +461,49 @@ for OLD_CAR in "${OLD_CARS_ARRAY[@]}"
 do
   echo "${OLD_CAR_STOCK_NUMBERS[${OLD_CAR}]}: ${OLD_CAR_YEAR[${OLD_CAR}]} ${OLD_CAR_MODEL[${OLD_CAR}]} - ${OLD_CAR_BODY_STYLE[${OLD_CAR}]} - ${OLD_CAR_ENGINE[${OLD_CAR}]} - ${OLD_CAR_TRANSMISSION[${OLD_CAR}]} Transmission - ${OLD_CAR_DESCRIPTION[${OLD_CAR}]}" >> email-body
 done
+
+
+
 #}}}
 
 #}}}
 
 # Email#{{{
 
-# Used to echo if an email is commented
-COUNT=0
-echo "Sending emails..."
-for EMAIL in "${EMAILS[@]}"
-do
-  # Used to echo if the line is commented
-  COUNT=$((COUNT + 1))
-  # Skip comments when parsing
-  # Also if it is commented print to the log and console that it is commented.
-  [[ ${EMAIL:0:1} == "#" ]] && echo "Line #$COUNT is Commented"  && continue
-  # Skip empty lines when parsing
-  [[ ${EMAIL:1:1} == "" ]] && continue
+# If no new cars, or no cars removed, set a flag to not send an email.
+sendMail=1
+if (( "$old_car_array_count" == "0" && "$new_car_array_count" == "0" && "$NUM_PRODUCTS_FOUND" == "-1" )); then
+  if (( "$DEBUG" == "1" )); then
+    echo "This email would not send. This is a debug email"
+    echo "This email would not send. This is a debug email" >> email-body
+    sendMail=1
+  else
+  sendMail=0
+  fi
+fi
 
-  # If more than one item was found, send an email saying that x was found
-  if [[ $NUM_PRODUCTS_FOUND > 0 ]]; then
+# only send mail, if sendMail is 1, or if debug is on.
+if (( "$sendMail" == "1" )); then
+  # Used to echo if an email is commented
+  COUNT=0
+  echo "Sending emails..."
+  for EMAIL in "${EMAILS[@]}"
+  do
+    # Used to echo if the line is commented
+    COUNT=$((COUNT + 1))
+    # Skip comments when parsing
+    # Also if it is commented print to the log and console that it is commented.
+    [[ ${EMAIL:0:1} == "#" ]] && echo "Line #$COUNT is Commented"  && continue
+    # Skip empty lines when parsing
+    [[ ${EMAIL:1:1} == "" ]] && continue
+
     mutt -s "Pick a Part Alert: $DATE_RANGE" $EMAIL < email-body
 
-    # otherwise, Send an email saying that there is no items.
-  else
-    echo "Pick a Part has nothing on sale this week ($DATE_RANGE) that you are looking for." | mutt -s "Pick a Part Alert: $DATE_RANGE" $EMAIL
-  fi
-  # -n removes trailing newlines
-  echo -n "Sent to $EMAIL"
-done
+    # -n removes trailing newlines
+    echo -n "Sent to $EMAIL"
+  done
+fi
+
 #}}}
 
 # Cleanup#{{{

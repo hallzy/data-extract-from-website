@@ -93,7 +93,7 @@ add this cronjob to run the script only for the car portion (no sale items)
 every day except Friday:
 
 ```bash
-0 18 * * 0,1,2,3,4,6 /PATH/TO/extract-from-pick-a-part cars-only
+0 18 * * 0,1,2,3,4,6 /PATH/TO/extract-from-pick-a-part --cars-only
 ```
 
 0 18 = 18:00 or 6:00pm
