@@ -16,6 +16,7 @@ then
 
   mkdir -p logs
   if [ "$1" == "--cars-only" ]
+  then
     time ./extract-from-pick-a-part-helper --cars-only | tee $PATH_TO_LOG_FILE
   else
     time ./extract-from-pick-a-part-helper | tee $PATH_TO_LOG_FILE

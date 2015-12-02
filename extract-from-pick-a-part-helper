@@ -497,7 +497,12 @@ if (( "$sendMail" == "1" )); then
     # Skip empty lines when parsing
     [[ ${EMAIL:1:1} == "" ]] && continue
 
+  if (( "$NUM_PRODUCTS_FOUND" == "-1" )); then
+    now=$(date +'%b %d, %Y')
+    mutt -s "Pick a Part Alert: $now" $EMAIL < email-body
+  else
     mutt -s "Pick a Part Alert: $DATE_RANGE" $EMAIL < email-body
+  fi
 
     # -n removes trailing newlines
     echo -n "Sent to $EMAIL"
