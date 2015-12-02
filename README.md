@@ -85,9 +85,22 @@ use the following cronjob settings in order to run this:
 ```
 
 Note: 0 is the minute of the day, 18 is the hour of the day (18 is 6pm), * means
-ever any day of the month, * means any month, 5 means Fridays. Therefore the script
+any day of the month, * means any month, 5 means Fridays. Therefore the script
 runs every Friday at 6pm.
 
-Note: I do not yet know when to update. The example above runs the script once
-every minute.
+Also, the car inventory is updated on an hourly basis during business hours, so
+add this cronjob to run the script only for the car portion (no sale items)
+every day except Friday:
+
+```bash
+0 18 * * 0,1,2,3,4,6 /PATH/TO/extract-from-pick-a-part cars-only
+```
+
+0 18 = 18:00 or 6:00pm
+\*           = Any day of the month
+\*           = Any Month
+0,1,2,3,4,6 = Sunday, Monday, Tuesday, Wednesday, Thursday, or Saturday
+
+Note that the car part will still run on friday as per the previous cronjob
+task, but it will also check for on sale items.
 
