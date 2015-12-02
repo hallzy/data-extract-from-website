@@ -77,6 +77,14 @@ details of the car.
 Cronjob
 -------
 
+create a new cronjob by executing this:
+
+```bash
+crontab -e
+```
+
+and enter the below.
+
 Since this website updates its page with new "on sale items" every week on Fridays at ~6pm,
 use the following cronjob settings in order to run this:
 
