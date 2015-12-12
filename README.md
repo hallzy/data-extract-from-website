@@ -85,8 +85,8 @@ crontab -e
 
 and enter the below.
 
-Since this website updates its page with new "on sale items" every week on Fridays at ~6pm,
-use the following cronjob settings in order to run this:
+Since this website updates its page with new "on sale items" every week on
+Fridays at ~6pm, use the following cronjob settings in order to run this:
 
 ```bash
 0 18 * * 5 /PATH/TO/extract-from-pick-a-part
@@ -102,7 +102,13 @@ every day except Friday:
 
 ```bash
 0 18 * * 0,1,2,3,4,6 /PATH/TO/extract-from-pick-a-part --cars-only
+02 13 * * * /PATH/TO/extract-from-pick-a-part --cars-only
 ```
+
+This runs every day at 1:02pm, and every day except friday at 6:00pm. It does
+not execute on Friday, because that is covered by the example before this
+example. I chose 1:02pm to give the website 2 minutes to update, and 1:02pm is
+close to the middle of the work day at Pick a Part.
 
 0 18 = 18:00 or 6:00pm
 \*           = Any day of the month
