@@ -1,6 +1,9 @@
 emails
 logs/
-debug/
-tdtags
-old-tdtags
-pagehtml
+tdtags_latest_cars
+tdtags_products_on_sale
+tdtags_old_cars
+fetched_home_page_html
+saturn_list_html
+email-body
+fetched_home_page_tdtag_with_newline

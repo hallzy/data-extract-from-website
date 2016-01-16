@@ -4,23 +4,37 @@
 # it, then we can continue...
 if [[ -z "$1" || ( "$1" == "--cars-only" ) ]]
 then
-  rm -rf debug/
-
   git pull
 
   cd ~/Documents/git-repos/remote-github/data-extract-from-website
 
+  mkdir -p temp
+  cp * temp
+
   DATE_VAR=$(date +%F_%H:%M:%S)
   LOG_FILE_NAME=$DATE_VAR-data-extract-from-website.log
-  PATH_TO_LOG_FILE=./logs/$LOG_FILE_NAME
+  PATH_TO_LOG_FILE=./logs/DEBUG-$DATE_VAR/$LOG_FILE_NAME
 
   mkdir -p logs
+  mkdir -p logs/DEBUG-$DATE_VAR
   if [ "$1" == "--cars-only" ]
   then
     time ./extract-from-pick-a-part-helper DEBUG --cars-only | tee $PATH_TO_LOG_FILE
   else
     time ./extract-from-pick-a-part-helper DEBUG | tee $PATH_TO_LOG_FILE
   fi
+
+  cp * logs/DEBUG-$DATE_VAR
+
+  cp -f temp/* ./
+  rm -rf temp
+
+  cd logs/DEBUG-$DATE_VAR
+  rm -rf debug-extract-from-pick-a-part
+  rm -rf extract-from-pick-a-part
+  rm -rf extract-from-pick-a-part-helper
+  rm -rf names-of-items-on-webpage
+  rm -rf README.md
 
 else
   echo " "

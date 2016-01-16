@@ -2,8 +2,8 @@
 
 touch email-body
 
-rm -rf old-tags
-cp tdtags old-tdtags
+rm -rf tdtags_old_cars
+cp tdtags_latest_cars tdtags_old_cars
 
 if [[ "$1" == "DEBUG" ]]; then
   DEBUG=1
@@ -42,15 +42,15 @@ if (( $DEBUG == 1 )); then
   done
 fi
 
-touch fetchedPage
-rm -rf fetchedPage
+touch fetched_home_page_html
+rm -rf fetched_home_page_html
 
 echo "Downloading webpage: http://www.pickapart.ca/"
-wget -O fetchedPage "http://www.pickapart.ca/"
+wget -O fetched_home_page_html "http://www.pickapart.ca/"
 
-cp -f fetchedPage pagehtml
+cp -f fetched_home_page_html fetched_home_page_tdtag_with_newline
 
-DATE_RANGE=$(command grep -Eo '[[:alpha:]]{3} [[:digit:]]{2}, [[:digit:]]{4} - [[:alpha:]]{3} [[:digit:]]{2}, [[:digit:]]{4}' fetchedPage)
+DATE_RANGE=$(command grep -Eo '[[:alpha:]]{3} [[:digit:]]{2}, [[:digit:]]{4} - [[:alpha:]]{3} [[:digit:]]{2}, [[:digit:]]{4}' fetched_home_page_tdtag_with_newline)
 
 #}}}
 
@@ -69,12 +69,12 @@ echo -e "Pick a Part has the following on sale from $DATE_RANGE:\n" >> email-bod
 
 
 # At the end of all td tags start a new line.
-sed -i "s@</td>@</td>\n@g" fetchedPage
+sed -i "s@</td>@</td>\n@g" fetched_home_page_tdtag_with_newline
 
-# Open fetchedPage#{{{
+# Open fetched_home_page_tdtag_with_newline#{{{
 declare -a ARRAY
 exec 10<&0
-fileName="fetchedPage"
+fileName="fetched_home_page_tdtag_with_newline"
 exec < $fileName
 let count=0
 #}}}
@@ -84,46 +84,46 @@ while read LINE; do
   ((count++))
 done
 #}}}
-# Close fetchedPage#{{{
+# Close fetched_home_page_tdtag_with_newline#{{{
 exec 0<&10 10<&-
 #}}}
 
 # Used to find the lines we need.
 regex="<td align='center' valign='top'>[[:print:]]*</td>"
 
-touch tdtags
-rm -rf tdtags
-touch tdtags
+touch tdtags_products_on_sale
+rm -rf tdtags_products_on_sale
+touch tdtags_products_on_sale
 
 ELEMENTS=${#ARRAY[@]}
 firstLine=0
 
 
-# make tdtags file that contains only the useful information.
+# make tdtags_products_on_sale file that contains only the useful information.
 for((i=0;i<$ELEMENTS;i++)); do
   if [[ ${ARRAY[${i}]} =~ $regex ]] ; then
     if [[ $firstLine<1 ]]; then
-      echo ${BASH_REMATCH[0]} > tdtags
+      echo ${BASH_REMATCH[0]} > tdtags_products_on_sale
       let firstLine=$firstLine+1
     else
-      echo ${BASH_REMATCH[0]} >> tdtags
+      echo ${BASH_REMATCH[0]} >> tdtags_products_on_sale
     fi
   fi
 done
 
-# Remove all unwanted values from tdtags
-# This generates a file tdtags that contains the item on one line, followed by
+# Remove all unwanted values from tdtags_products_on_sale
+# This generates a file tdtags_products_on_sale that contains the item on one line, followed by
 # the price on the second line.
 # remove "<td align='center' valign='top'>" from each line
-sed -i "s@<td align='center' valign='top'>@@g" tdtags
+sed -i "s@<td align='center' valign='top'>@@g" tdtags_products_on_sale
 # remove </td> tags
-sed -i "s@</td>@@g" tdtags
+sed -i "s@</td>@@g" tdtags_products_on_sale
 # removes the <br> tag and replaces it with " - ". That way the product name and
 # price are separated by a " - "
-sed -i "s@<br>@ - @g" tdtags
+sed -i "s@<br>@ - @g" tdtags_products_on_sale
 
-# Put the fetched items from tdtags into an array
-readarray FETCHED_ITEMS < ./tdtags
+# Put the fetched items from tdtags_products_on_sale into an array
+readarray FETCHED_ITEMS < ./tdtags_products_on_sale
 NUM_PRODUCTS_FOUND=0
 
 echo "Searching webpage for items of interest:"
@@ -167,9 +167,9 @@ fi
 # Find new or missing cars on the lot#{{{
 echo "Downloading car list from webpage: http://parts.pickapart.ca/index.php"
 # This submits a form on pickapart.ca to get a list of saturns in the lot.
-curl --form-string 'md=submit' --form-string 'model=Saturn' 'http://parts.pickapart.ca/index.php' > saturn-car-list
+curl --form-string 'md=submit' --form-string 'model=Saturn' 'http://parts.pickapart.ca/index.php' > saturn_list_html
 
-dos2unix saturn-car-list
+dos2unix saturn_list_html
 
 # -e lets the \n act as a newline character
 # Only do this if nothing is being printed for sale items, otherwise there will
@@ -180,10 +180,10 @@ fi
 
 # Remove all lines from html that are not necessary at all (before the parts we don't need, and after)#{{{
 
-# Open fetchedPage
+# Open saturn_list_html
 declare -a ARRAY
 exec 10<&0
-fileName="saturn-car-list"
+fileName="saturn_list_html"
 exec < $fileName
 let count=0
 
@@ -201,9 +201,9 @@ regex="<tr [[:print:]]*<a href=\"http[[:print:]]*</tr>"
 
 # make tdtags file that contains only the useful information.#{{{
 
-touch tdtags
-rm -rf tdtags
-touch tdtags
+touch tdtags_latest_cars
+rm -rf tdtags_latest_cars
+touch tdtags_latest_cars
 
 ELEMENTS=${#ARRAY[@]}
 firstLine=0
@@ -212,32 +212,32 @@ firstLine=0
 for((i=0;i<$ELEMENTS;i++)); do
   if [[ ${ARRAY[${i}]} =~ $regex ]] ; then
     if [[ $firstLine<1 ]]; then
-      echo ${BASH_REMATCH[0]} > tdtags
+      echo ${BASH_REMATCH[0]} > tdtags_latest_cars
       let firstLine=$firstLine+1
     else
-      echo ${BASH_REMATCH[0]} >> tdtags
+      echo ${BASH_REMATCH[0]} >> tdtags_latest_cars
     fi
   fi
 done
 
 # At the end of all td tags start a new line.
-sed -i "s@</td>@</td>\n@g" tdtags
+sed -i "s@</td>@</td>\n@g" tdtags_latest_cars
 
 
 # Delete all lines containing <tr bgcolor=
-sed -i '/<tr bgcolor=/d' tdtags
+sed -i '/<tr bgcolor=/d' tdtags_latest_cars
 
 # remove "<td>" from each line
-sed -i "s@<td>@@g" tdtags
+sed -i "s@<td>@@g" tdtags_latest_cars
 # remove "</td>" from each line
-sed -i "s@</td>@@g" tdtags
+sed -i "s@</td>@@g" tdtags_latest_cars
 # remove "</tr>" from each line
-sed -i "s@</tr>@@g" tdtags
+sed -i "s@</tr>@@g" tdtags_latest_cars
 #}}}
 
 # Populate Arrays for the data for the new cars#{{{
 
-# Open tdtags
+# Open tdtags_latest_cars
 declare -a CAR_MODEL
 declare -a CAR_YEAR
 declare -a CAR_BODY_STYLE
@@ -246,7 +246,7 @@ declare -a CAR_TRANSMISSION
 declare -a CAR_DESCRIPTION
 declare -a CAR_STOCK_NUMBERS
 exec 10<&0
-fileName="tdtags"
+fileName="tdtags_latest_cars"
 exec < $fileName
 let car_model_count=0
 let car_year_count=0
@@ -326,7 +326,7 @@ declare -a OLD_CAR_TRANSMISSION
 declare -a OLD_CAR_DESCRIPTION
 declare -a OLD_CAR_STOCK_NUMBERS
 exec 10<&0
-fileName="old-tdtags"
+fileName="tdtags_old_cars"
 exec < $fileName
 let old_car_model_count=0
 let old_car_year_count=0
@@ -515,20 +515,9 @@ fi
 #}}}
 
 # Cleanup#{{{
-if (( $DEBUG == 1 )); then
-  mkdir debug
-
-  mv fetchedPage debug/
-  mv email-body debug/
-  mv saturn-car-list debug/
-else
-  echo "cleanup..."
-  rm -rf fetchedPage
-  rm -rf email-body
-  rm -rf saturn-car-list
-fi
 
 unset IFS
 set +f
+
 #}}}
 
