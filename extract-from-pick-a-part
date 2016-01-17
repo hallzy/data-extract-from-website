@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# bare bones check that this script started:
+DATE_VAR=$(date +%F_%H:%M:%S)
+echo "$DATE_VAR" >> script_exec_started
+
 # If there are no arguments, or the only argument is --email with a string after
 # it, then we can continue...
 if [[ -z "$1" || ( "$1" == "--cars-only" ) ]]
@@ -32,10 +36,15 @@ then
   rm -rf names-of-items-on-webpage
   rm -rf README.md
 
+
 else
   echo " "
   echo "Usage: If no options are given, this script will run fully"
   echo "--cars-only : Will execute only the new car, or old car parts"
   echo " "
 fi
+
+# bare bones check that this script finished:
+cd -
+echo "$DATE_VAR" >> script_exec_finish
 
