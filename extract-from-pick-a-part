@@ -36,6 +36,9 @@ then
   rm -rf names-of-items-on-webpage
   rm -rf README.md
 
+  cd ..
+  rm -rf latest
+  ln -fs $DATE_VAR/ latest
 
 else
   echo " "
