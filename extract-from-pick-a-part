@@ -40,6 +40,12 @@ then
   rm -rf latest
   ln -fs $DATE_VAR/ latest
 
+  # Remove all but the newest 29 entries... That is, all the logs from the last
+  # 2 weeks do not get deleted  (2 folders a day, for 14 days), as well as the
+  # symlink for the latest entry.
+  ls -tp | tail -n +30 | xargs -d '\n' rm -rf --
+
+
 else
   echo " "
   echo "Usage: If no options are given, this script will run fully"
