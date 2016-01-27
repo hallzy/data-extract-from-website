@@ -1,5 +1,8 @@
 #!/bin/bash
 
+cd ~/Documents/git-repos/remote-github/data-extract-from-website
+git pull
+
 # bare bones check that this script started:
 DATE_VAR=$(date +%F_%H:%M:%S)
 echo "DEBUG-$DATE_VAR" >> script_exec_started
@@ -9,9 +12,6 @@ echo "DEBUG-$DATE_VAR" >> script_exec_started
 # it, then we can continue...
 if [[ -z "$1" || ( "$1" == "--cars-only" ) ]]
 then
-  git pull
-
-  cd ~/Documents/git-repos/remote-github/data-extract-from-website
 
   mkdir -p temp
   cp * temp
@@ -39,6 +39,8 @@ then
   rm -rf extract-from-pick-a-part-helper
   rm -rf names-of-items-on-webpage
   rm -rf README.md
+  rm -rf script_exec_finish
+  rm -rf script_exec_started
 
 
 else
