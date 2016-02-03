@@ -439,6 +439,12 @@ do
 done
 #}}}
 
+# Echo how many cars are still on the lot iff at least one car has been removed
+# or added.
+if (( "$old_car_array_count" > "0" || "$new_car_array_count" > "0" )); then
+  echo -e "There are ${num_of_cars_current} cars left on the lot.\n" >> email-body
+fi
+
 # Append new cars to email body#{{{
 
 if (( "$new_car_array_count" > "0" )); then
