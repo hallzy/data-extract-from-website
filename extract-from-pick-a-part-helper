@@ -1,9 +1,9 @@
 #!/bin/bash
 
+# declare -a CARS=("Saturn" "Caravan")
+
 touch email-body
 
-rm -rf tdtags_old_cars
-cp tdtags_latest_cars tdtags_old_cars
 
 if [[ "$1" == "DEBUG" ]]; then
   DEBUG=1
@@ -164,26 +164,25 @@ else
   NUM_PRODUCTS_FOUND=-1
 fi
 
+readarray CARS < ./cars-to-find
+for CAR in "${CARS[@]}"
+do
+  CAR=${CAR//$'\n'/}
+  rm -rf "${CAR}_tdtags_old_cars"
+  cp "${CAR}_tdtags_latest_cars" "${CAR}_tdtags_old_cars"
 # Find new or missing cars on the lot#{{{
 echo "Downloading car list from webpage: http://parts.pickapart.ca/index.php"
-# This submits a form on pickapart.ca to get a list of saturns in the lot.
-curl --form-string 'md=submit' --form-string 'model=Saturn' 'http://parts.pickapart.ca/index.php' > saturn_list_html
+# This submits a form on pickapart.ca to get a list of ${CAR}s in the lot.
+curl --form-string 'md=submit' --form-string "model=${CAR}" 'http://parts.pickapart.ca/index.php' > "${CAR}_list_html"
 
-dos2unix saturn_list_html
-
-# -e lets the \n act as a newline character
-# Only do this if nothing is being printed for sale items, otherwise there will
-# be a large space at the top.
-if (( "$NUM_PRODUCTS_FOUND" != "-1" )); then
-  echo -e "\n\n" >> email-body
-fi
+dos2unix "${CAR}_list_html"
 
 # Remove all lines from html that are not necessary at all (before the parts we don't need, and after)#{{{
 
-# Open saturn_list_html
+# Open ${CAR}_list_html
 declare -a ARRAY
 exec 10<&0
-fileName="saturn_list_html"
+fileName="${CAR}_list_html"
 exec < $fileName
 let count=0
 
@@ -201,9 +200,9 @@ regex="<tr [[:print:]]*<a href=\"http[[:print:]]*</tr>"
 
 # make tdtags file that contains only the useful information.#{{{
 
-touch tdtags_latest_cars
-rm -rf tdtags_latest_cars
-touch tdtags_latest_cars
+touch "${CAR}_tdtags_latest_cars"
+rm -rf "${CAR}_tdtags_latest_cars"
+touch "${CAR}_tdtags_latest_cars"
 
 ELEMENTS=${#ARRAY[@]}
 firstLine=0
@@ -212,32 +211,32 @@ firstLine=0
 for((i=0;i<$ELEMENTS;i++)); do
   if [[ ${ARRAY[${i}]} =~ $regex ]] ; then
     if [[ $firstLine<1 ]]; then
-      echo ${BASH_REMATCH[0]} > tdtags_latest_cars
+      echo ${BASH_REMATCH[0]} > "${CAR}_tdtags_latest_cars"
       let firstLine=$firstLine+1
     else
-      echo ${BASH_REMATCH[0]} >> tdtags_latest_cars
+      echo ${BASH_REMATCH[0]} >> "${CAR}_tdtags_latest_cars"
     fi
   fi
 done
 
 # At the end of all td tags start a new line.
-sed -i "s@</td>@</td>\n@g" tdtags_latest_cars
+sed -i "s@</td>@</td>\n@g" "${CAR}_tdtags_latest_cars"
 
 
 # Delete all lines containing <tr bgcolor=
-sed -i '/<tr bgcolor=/d' tdtags_latest_cars
+sed -i '/<tr bgcolor=/d' "${CAR}_tdtags_latest_cars"
 
 # remove "<td>" from each line
-sed -i "s@<td>@@g" tdtags_latest_cars
+sed -i "s@<td>@@g" "${CAR}_tdtags_latest_cars"
 # remove "</td>" from each line
-sed -i "s@</td>@@g" tdtags_latest_cars
+sed -i "s@</td>@@g" "${CAR}_tdtags_latest_cars"
 # remove "</tr>" from each line
-sed -i "s@</tr>@@g" tdtags_latest_cars
+sed -i "s@</tr>@@g" "${CAR}_tdtags_latest_cars"
 #}}}
 
 # Populate Arrays for the data for the new cars#{{{
 
-# Open tdtags_latest_cars
+# Open "${CAR}_tdtags_latest_cars"
 declare -a CAR_MODEL
 declare -a CAR_YEAR
 declare -a CAR_BODY_STYLE
@@ -246,7 +245,7 @@ declare -a CAR_TRANSMISSION
 declare -a CAR_DESCRIPTION
 declare -a CAR_STOCK_NUMBERS
 exec 10<&0
-fileName="tdtags_latest_cars"
+fileName="${CAR}_tdtags_latest_cars"
 exec < $fileName
 let car_model_count=0
 let car_year_count=0
@@ -257,7 +256,7 @@ let car_description_count=0
 let car_stock_array_count=0
 
 let count=0
-# CAR_ARRAY now contains all the car information for saturns.
+# CAR_ARRAY now contains all the car information for ${CAR}s.
 # Note that bash does not have 2D arrays, so it is stored in a 1D array.
 
 # index 0 = Date added
@@ -326,7 +325,7 @@ declare -a OLD_CAR_TRANSMISSION
 declare -a OLD_CAR_DESCRIPTION
 declare -a OLD_CAR_STOCK_NUMBERS
 exec 10<&0
-fileName="tdtags_old_cars"
+fileName="${CAR}_tdtags_old_cars"
 exec < $fileName
 let old_car_model_count=0
 let old_car_year_count=0
@@ -337,7 +336,7 @@ let old_car_description_count=0
 let old_car_stock_array_count=0
 
 let count=0
-# CAR_ARRAY now contains all the car information for saturns.
+# CAR_ARRAY now contains all the car information for ${CAR}s.
 # Note that bash does not have 2D arrays, so it is stored in a 1D array.
 
 while read LINE; do
@@ -442,18 +441,23 @@ done
 # Echo how many cars are still on the lot iff at least one car has been removed
 # or added.
 if (( "$old_car_array_count" > "0" || "$new_car_array_count" > "0" )); then
-  echo -e "There are ${num_of_cars_current} cars left on the lot.\n" >> email-body
+  if (( "$NUM_PRODUCTS_FOUND" != "-1" )); then
+    echo -e "\n\n" >> email-body
+  fi
+  echo "=================================================" >> email-body
+  echo "${CAR}s -- ${num_of_cars_current} On the Lot" >> email-body
+  echo "=================================================" >> email-body
 fi
 
 # Append new cars to email body#{{{
 
 if (( "$new_car_array_count" > "0" )); then
-  echo "New Cars on the Lot:" >> email-body
+  echo "New ${CAR}s on the Lot:" >> email-body
 fi
 
 for NEW_CAR in "${NEW_CARS_ARRAY[@]}"
 do
-  echo "${CAR_STOCK_NUMBERS[${NEW_CAR}]}: ${CAR_YEAR[${NEW_CAR}]} ${CAR_MODEL[${NEW_CAR}]} - ${CAR_BODY_STYLE[${NEW_CAR}]} - ${CAR_ENGINE[${NEW_CAR}]} - ${CAR_TRANSMISSION[${NEW_CAR}]} Transmission - ${CAR_DESCRIPTION[${NEW_CAR}]}" >> email-body
+  echo "   -  ${CAR_STOCK_NUMBERS[${NEW_CAR}]}: ${CAR_YEAR[${NEW_CAR}]} ${CAR_MODEL[${NEW_CAR}]} - ${CAR_BODY_STYLE[${NEW_CAR}]} - ${CAR_ENGINE[${NEW_CAR}]} - ${CAR_TRANSMISSION[${NEW_CAR}]} Transmission - ${CAR_DESCRIPTION[${NEW_CAR}]}" >> email-body
 done
 #}}}
 
@@ -463,12 +467,12 @@ if (( "$old_car_array_count" > "0" )); then
   if (( "$new_car_array_count" > "0" )); then
     echo -e "\n" >> email-body
   fi
-  echo "Cars that have been removed from the lot:" >> email-body
+  echo "${CAR}s that have been removed from the lot:" >> email-body
 fi
 
 for OLD_CAR in "${OLD_CARS_ARRAY[@]}"
 do
-  echo "${OLD_CAR_STOCK_NUMBERS[${OLD_CAR}]}: ${OLD_CAR_YEAR[${OLD_CAR}]} ${OLD_CAR_MODEL[${OLD_CAR}]} - ${OLD_CAR_BODY_STYLE[${OLD_CAR}]} - ${OLD_CAR_ENGINE[${OLD_CAR}]} - ${OLD_CAR_TRANSMISSION[${OLD_CAR}]} Transmission - ${OLD_CAR_DESCRIPTION[${OLD_CAR}]}" >> email-body
+  echo "   -  ${OLD_CAR_STOCK_NUMBERS[${OLD_CAR}]}: ${OLD_CAR_YEAR[${OLD_CAR}]} ${OLD_CAR_MODEL[${OLD_CAR}]} - ${OLD_CAR_BODY_STYLE[${OLD_CAR}]} - ${OLD_CAR_ENGINE[${OLD_CAR}]} - ${OLD_CAR_TRANSMISSION[${OLD_CAR}]} Transmission - ${OLD_CAR_DESCRIPTION[${OLD_CAR}]}" >> email-body
 done
 
 
@@ -476,6 +480,7 @@ done
 #}}}
 
 #}}}
+done
 
 # Email#{{{
 

@@ -74,6 +74,13 @@ or removed from inventory.
 Cars that have been added or removed are attached in the email with all the
 details of the car.
 
+Cars-to-find
+------------
+
+Is a newline separated list of cars to search for. The entries must match the
+value variable of the car you want. The value variables can be found
+[here](view-source:http://parts.pickapart.ca/).
+
 Cronjob
 -------
 
