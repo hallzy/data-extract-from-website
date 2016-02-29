@@ -165,6 +165,8 @@ else
 fi
 
 readarray CARS < ./cars-to-find
+let new_car_total_count=0
+let old_car_total_count=0
 for CAR in "${CARS[@]}"
 do
   CAR=${CAR//$'\n'/}
@@ -401,6 +403,7 @@ do
     echo "New Car: $count - $NEW_NUMBER"
     NEW_CARS_ARRAY[$new_car_array_count]=$count
     ((new_car_array_count++))
+    ((new_car_total_count++))
   fi
   ((count++))
   found=0
@@ -432,6 +435,7 @@ do
     echo "Old Car: $count - $OLD_NUMBER"
     OLD_CARS_ARRAY[$old_car_array_count]=$count
     ((old_car_array_count++))
+    ((old_car_total_count++))
   fi
   ((count++))
   found=0
@@ -486,7 +490,7 @@ done
 
 # If no new cars, or no cars removed, set a flag to not send an email.
 sendMail=1
-if (( "$old_car_array_count" == "0" && "$new_car_array_count" == "0" && "$NUM_PRODUCTS_FOUND" == "-1" )); then
+if (( "$old_car_total_count" == "0" && "$new_car_total_count" == "0" && "$NUM_PRODUCTS_FOUND" == "-1" )); then
   if (( "$DEBUG" == "1" )); then
     echo "This email would not send. This is a debug email"
     echo "This email would not send. This is a debug email" >> email-body
