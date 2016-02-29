@@ -457,12 +457,12 @@ fi
 
 if (( "$new_car_array_count" > "0" )); then
   echo "New ${CAR}s on the Lot:" >> email-body
+  for NEW_CAR in "${NEW_CARS_ARRAY[@]}"
+  do
+    echo "   -  ${CAR_STOCK_NUMBERS[${NEW_CAR}]}: ${CAR_YEAR[${NEW_CAR}]} ${CAR_MODEL[${NEW_CAR}]} - ${CAR_BODY_STYLE[${NEW_CAR}]} - ${CAR_ENGINE[${NEW_CAR}]} - ${CAR_TRANSMISSION[${NEW_CAR}]} Transmission - ${CAR_DESCRIPTION[${NEW_CAR}]}" >> email-body
+  done
 fi
 
-for NEW_CAR in "${NEW_CARS_ARRAY[@]}"
-do
-  echo "   -  ${CAR_STOCK_NUMBERS[${NEW_CAR}]}: ${CAR_YEAR[${NEW_CAR}]} ${CAR_MODEL[${NEW_CAR}]} - ${CAR_BODY_STYLE[${NEW_CAR}]} - ${CAR_ENGINE[${NEW_CAR}]} - ${CAR_TRANSMISSION[${NEW_CAR}]} Transmission - ${CAR_DESCRIPTION[${NEW_CAR}]}" >> email-body
-done
 #}}}
 
 # Append cars removed from the lot to the email body#{{{
@@ -472,14 +472,11 @@ if (( "$old_car_array_count" > "0" )); then
     echo -e "\n" >> email-body
   fi
   echo "${CAR}s that have been removed from the lot:" >> email-body
+  for OLD_CAR in "${OLD_CARS_ARRAY[@]}"
+  do
+    echo "   -  ${OLD_CAR_STOCK_NUMBERS[${OLD_CAR}]}: ${OLD_CAR_YEAR[${OLD_CAR}]} ${OLD_CAR_MODEL[${OLD_CAR}]} - ${OLD_CAR_BODY_STYLE[${OLD_CAR}]} - ${OLD_CAR_ENGINE[${OLD_CAR}]} - ${OLD_CAR_TRANSMISSION[${OLD_CAR}]} Transmission - ${OLD_CAR_DESCRIPTION[${OLD_CAR}]}" >> email-body
+  done
 fi
-
-for OLD_CAR in "${OLD_CARS_ARRAY[@]}"
-do
-  echo "   -  ${OLD_CAR_STOCK_NUMBERS[${OLD_CAR}]}: ${OLD_CAR_YEAR[${OLD_CAR}]} ${OLD_CAR_MODEL[${OLD_CAR}]} - ${OLD_CAR_BODY_STYLE[${OLD_CAR}]} - ${OLD_CAR_ENGINE[${OLD_CAR}]} - ${OLD_CAR_TRANSMISSION[${OLD_CAR}]} Transmission - ${OLD_CAR_DESCRIPTION[${OLD_CAR}]}" >> email-body
-done
-
-
 
 #}}}
 
