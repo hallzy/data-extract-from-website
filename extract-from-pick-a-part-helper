@@ -239,6 +239,7 @@ sed -i "s@</tr>@@g" "${CAR}_tdtags_latest_cars"
 # Populate Arrays for the data for the new cars#{{{
 
 # Open "${CAR}_tdtags_latest_cars"
+declare -a DATE_ADDED
 declare -a CAR_MODEL
 declare -a CAR_YEAR
 declare -a CAR_BODY_STYLE
@@ -249,6 +250,7 @@ declare -a CAR_STOCK_NUMBERS
 exec 10<&0
 fileName="${CAR}_tdtags_latest_cars"
 exec < $fileName
+let date_added_count=0
 let car_model_count=0
 let car_year_count=0
 let car_body_style_count=0
@@ -277,8 +279,12 @@ let count=0
 # Each line gets stored in an array.
 
 while read LINE; do
+  # Get date added
+  if (( $count % 10 == 0 )); then
+    DATE_ADDED[$date_added_count]=$LINE
+    ((date_added_count++))
   # Get car models
-  if (( $count % 10 == 2 )); then
+  elif (( $count % 10 == 2 )); then
     CAR_MODEL[$car_model_count]=$LINE
     ((car_model_count++))
   # Get car year
@@ -461,7 +467,7 @@ fi
 
 for NEW_CAR in "${NEW_CARS_ARRAY[@]}"
 do
-  echo "   -  ${CAR_STOCK_NUMBERS[${NEW_CAR}]}: ${CAR_YEAR[${NEW_CAR}]} ${CAR_MODEL[${NEW_CAR}]} - ${CAR_BODY_STYLE[${NEW_CAR}]} - ${CAR_ENGINE[${NEW_CAR}]} - ${CAR_TRANSMISSION[${NEW_CAR}]} Transmission - ${CAR_DESCRIPTION[${NEW_CAR}]}" >> email-body
+  echo "   -  Added on ${DATE_ADDED[${NEW_CAR}]} - ${CAR_STOCK_NUMBERS[${NEW_CAR}]}: ${CAR_YEAR[${NEW_CAR}]} ${CAR_MODEL[${NEW_CAR}]} - ${CAR_BODY_STYLE[${NEW_CAR}]} - ${CAR_ENGINE[${NEW_CAR}]} - ${CAR_TRANSMISSION[${NEW_CAR}]} Transmission - ${CAR_DESCRIPTION[${NEW_CAR}]}" >> email-body
 done
 
 #}}}
