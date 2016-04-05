@@ -93,23 +93,23 @@ crontab -e
 and enter the below.
 
 Since this website updates its page with new "on sale items" every week on
-Fridays at 7pm, use the following cronjob settings in order to run this:
+Fridays at 6pm, use the following cronjob settings in order to run this:
 
 ```bash
-0 19 * * 5 /PATH/TO/extract-from-pick-a-part
+0 18 * * 5 /PATH/TO/extract-from-pick-a-part
 ```
 
-Note: 0 is the minute of the day, 19 is the hour of the day (19 is 7pm), * means
+Note: 0 is the minute of the day, 18 is the hour of the day (18 is 6pm), * means
 any day of the month, * means any month, 5 means Fridays. Therefore the script
-runs every Friday at 7pm.
+runs every Friday at 6pm.
 
 Also, the car inventory is updated on an hourly basis during business hours, so
 add this cronjob to run the script only for the car portion (no sale items)
 every day except Friday:
 
 ```bash
-0 19 * * 0,1,2,3,4,6 /PATH/TO/extract-from-pick-a-part --cars-only
-02 13 * * * /PATH/TO/extract-from-pick-a-part --cars-only
+0 * * * 0,1,2,3,4,6 /PATH/TO/extract-from-pick-a-part --cars-only
+0 0-17,19-23 * * 5 /PATH/TO/extract-from-pick-a-part --cars-only
 ```
 
 This runs every day at 1:02pm, and every day except friday at 7:00pm. It does
@@ -117,10 +117,18 @@ not execute on Friday, because that is covered by the example before this
 example. I chose 1:02pm to give the website 2 minutes to update, and 1:02pm is
 close to the middle of the work day at Pick a Part.
 
-0 19 = 19:00 or 7:00pm
+0 *          = Every Hour on the hour
 \*           = Any day of the month
 \*           = Any Month
 0,1,2,3,4,6 = Sunday, Monday, Tuesday, Wednesday, Thursday, or Saturday
+
+0 0-17,19-23 = Every Hour on the hour except for 18:00 (6pm)
+\*           = Any day of the month
+\*           = Any Month
+5            = Friday only.
+
+Friday's I want to skip 18:00, because it gets run from the first crontab line
+anyways at this time.
 
 Note that the car part will still run on friday as per the previous cronjob
 task, but it will also check for on sale items.
