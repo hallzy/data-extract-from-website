@@ -515,20 +515,22 @@ if (( "$sendMail" == "1" )); then
   echo "Sending emails..."
   for EMAIL in "${EMAILS[@]}"
   do
-    # Used to echo if the line is commented
-    COUNT=$((COUNT + 1))
-    # Skip comments when parsing
-    # Also if it is commented print to the log and console that it is commented.
-    [[ ${EMAIL:0:1} == "#" ]] && echo "Line #$COUNT is Commented"  && continue
+    # This stuff is for comment checking. I prefer not to check so that if an
+    # email is commented I get a delivery status notification failure)
+    # # Used to echo if the line is commented
+    # # Skip comments when parsing
+    # # Also if it is commented print to the log and console that it is commented.
+    # COUNT=$((COUNT + 1))
+    # [[ ${EMAIL:0:1} == "#" ]] && echo "Line #$COUNT is Commented" && continue
     # Skip empty lines when parsing
     [[ ${EMAIL:1:1} == "" ]] && continue
 
-  if (( "$NUM_PRODUCTS_FOUND" == "-1" )); then
-    now=$(date +'%b %d, %Y')
-    mutt -s "Pick a Part Alert: $now" $EMAIL < email-body
-  else
-    mutt -s "Pick a Part Alert: $DATE_RANGE" $EMAIL < email-body
-  fi
+    if (( "$NUM_PRODUCTS_FOUND" == "-1" )); then
+      now=$(date +'%b %d, %Y')
+      mutt -s "Pick a Part Alert: $now" $EMAIL < email-body
+    else
+      mutt -s "Pick a Part Alert: $DATE_RANGE" $EMAIL < email-body
+    fi
 
     # -n removes trailing newlines
     echo -n "Sent to $EMAIL"
