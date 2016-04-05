@@ -4,20 +4,21 @@ cd ~/Documents/git-repos/remote-github/data-extract-from-website
 git pull
 
 # bare bones check that this script started:
-DATE_VAR=$(date +%F_%H:%M:%S)
-echo "$DATE_VAR" >> script_exec_started
+DATE_VAR=$(date +%F)
+TIME_VAR=$(date +%H:%M:%S)
+echo "$DATE_VAR_$TIME_VAR" >> script_exec_started
 
 # If there are no arguments, or the only argument is --email with a string after
 # it, then we can continue...
 if [[ -z "$1" || ( "$1" == "--cars-only" ) ]]
 then
 
-  DATE_VAR=$(date +%F_%H:%M:%S)
-  LOG_FILE_NAME=$DATE_VAR-data-extract-from-website.log
-  PATH_TO_LOG_FILE=./logs/$DATE_VAR/$LOG_FILE_NAME
+  LOG_FILE_NAME=data-extract-from-website.log
+  PATH_TO_LOG_FILE=./logs/$DATE_VAR/$TIME_VAR/$LOG_FILE_NAME
 
   mkdir -p logs
   mkdir -p logs/$DATE_VAR
+  mkdir -p logs/$DATE_VAR/$TIME_VAR
   if [ "$1" == "--cars-only" ]
   then
     time ./extract-from-pick-a-part-helper --cars-only | tee $PATH_TO_LOG_FILE
@@ -25,9 +26,9 @@ then
     time ./extract-from-pick-a-part-helper | tee $PATH_TO_LOG_FILE
   fi
 
-  cp * logs/$DATE_VAR
+  cp * logs/$DATE_VAR/$TIME_VAR
 
-  cd logs/$DATE_VAR
+  cd logs/$DATE_VAR/$TIME_VAR
   rm -rf debug-extract-from-pick-a-part
   rm -rf extract-from-pick-a-part
   rm -rf extract-from-pick-a-part-helper
@@ -36,14 +37,15 @@ then
   rm -rf script_exec_finish
   rm -rf script_exec_started
 
-  cd ..
+  cd ../..
   rm -rf latest
-  ln -fs $DATE_VAR/ latest
+  ln -fs $DATE_VAR/$TIME_VAR latest
 
-  # Remove all but the newest 29 entries... That is, all the logs from the last
-  # 2 weeks do not get deleted  (2 folders a day, for 14 days), as well as the
-  # symlink for the latest entry.
-  ls -tp | tail -n +30 | xargs -d '\n' rm -rf --
+  # Remove all but the logs from the last week... That is, all the logs from
+  # the last 2 weeks do not get deleted  (1 folder a day, for 14 days plus
+  # well as the symlink for the latest entry  ---  (1*14)+1 = 15 --- Use 16 in
+  # script because it needs to be 1 more than the amount I need).
+  ls -tp | tail -n +16 | xargs -d '\n' rm -rf --
 
 
 else
@@ -55,5 +57,5 @@ fi
 
 # bare bones check that this script finished:
 cd -
-echo "$DATE_VAR" >> script_exec_finish
+echo "$DATE_VAR_$TIME_VAR" >> script_exec_finish
 
