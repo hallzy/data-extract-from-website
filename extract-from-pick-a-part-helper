@@ -46,7 +46,17 @@ touch fetched_home_page_html
 rm -rf fetched_home_page_html
 
 echo "Downloading webpage: http://www.pickapart.ca/"
-wget -O fetched_home_page_html "http://www.pickapart.ca/"
+flag=0
+wget -O fetched_home_page_html "http://www.pickapart.ca/" && flag=1
+
+if (( $flag == 1 )); then
+  echo "Page Download Success"
+else
+  echo "Page Download Failed"
+  echo "Script Failed to download on sale items" > email-body
+  mutt -s "Pick a Part Alert FAILED" ${EMAILS[0]} < email-body
+  exit
+fi
 
 cp -f fetched_home_page_html fetched_home_page_tdtag_with_newline
 
@@ -175,7 +185,17 @@ do
 # Find new or missing cars on the lot#{{{
 echo "Downloading car list from webpage: http://parts.pickapart.ca/index.php"
 # This submits a form on pickapart.ca to get a list of ${CAR}s in the lot.
-curl --form-string 'md=submit' --form-string "model=${CAR}" 'http://parts.pickapart.ca/index.php' > "${CAR}_list_html"
+flag=0
+curl --form-string 'md=submit' --form-string "model=${CAR}" 'http://parts.pickapart.ca/index.php' > "${CAR}_list_html" && flag=1
+
+if (( $flag == 1 )); then
+  echo "Page Download Success"
+else
+  echo "Page Download Failed"
+  echo "Script Failed to download car list" > email-body
+  mutt -s "Pick a Part Alert FAILED" ${EMAILS[0]} < email-body
+  exit
+fi
 
 dos2unix "${CAR}_list_html"
 
