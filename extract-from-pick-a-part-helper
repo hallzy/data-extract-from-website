@@ -255,8 +255,12 @@ done
 sed -i "s@</td>@</td>\n@g" "${CAR}_tdtags_latest_cars"
 
 
+# Put urls on there on lines
+sed -i "s@http@\nhttp@g" "${CAR}_tdtags_latest_cars" | sed -in "s/\(^http[s]*:[a-Z0-9/.=?_-]*\)\(.*\)/\1/p"
 # Delete all lines containing <tr bgcolor=
 sed -i '/<tr bgcolor=/d' "${CAR}_tdtags_latest_cars"
+# Delete everything after the url on the line
+sed -i 's/JPG.*/JPG/' "${CAR}_tdtags_latest_cars"
 
 # remove "<td>" from each line
 sed -i "s@<td>@@g" "${CAR}_tdtags_latest_cars"
@@ -269,6 +273,8 @@ sed -i "s@</tr>@@g" "${CAR}_tdtags_latest_cars"
 # Populate Arrays for the data for the new cars#{{{
 
 # Open "${CAR}_tdtags_latest_cars"
+declare -a PICS_START_POINT
+declare -a HOW_MANY_PICS
 declare -a DATE_ADDED
 declare -a CAR_MODEL
 declare -a CAR_YEAR
@@ -280,6 +286,7 @@ declare -a CAR_STOCK_NUMBERS
 exec 10<&0
 fileName="${CAR}_tdtags_latest_cars"
 exec < $fileName
+let pics_start_point_count=0
 let date_added_count=0
 let car_model_count=0
 let car_year_count=0
@@ -289,9 +296,30 @@ let car_transmission_count=0
 let car_description_count=0
 let car_stock_array_count=0
 
-let count=0
 # CAR_ARRAY now contains all the car information for ${CAR}s.
 # Note that bash does not have 2D arrays, so it is stored in a 1D array.
+
+# We first need to look for URLs. These are the URLs for the Pictures.
+
+let count=0
+let looking_for_next_car=1
+let how_many_pics=0
+while read LINE; do
+  # Get date added
+  if [[ "$LINE" =~ "http" ]] ; then
+      ((how_many_pics++))
+    if (( $looking_for_next_car == 1 )); then
+      PICS_START_POINT[$pics_start_point_count]=$count
+      ((pics_start_point_count++))
+      looking_for_next_car=0
+    fi
+  else
+    HOW_MANY_PICS[$pics_start_point_count]=$how_many_pics
+    how_many_pics=0
+    looking_for_next_car=1
+  fi
+  ((count++))
+done
 
 # index 0 = Date added
 # index 1 = Make
@@ -308,43 +336,50 @@ let count=0
 # etc
 # Each line gets stored in an array.
 
+let count=0
 while read LINE; do
   # Get date added
-  if (( $count % 10 == 0 )); then
+    HOW_MANY_PICS[$pics_start_point_count]=$how_many_pics
+    if (( $count % 10 == 0 + ${HOW_MANY_PICS[$date_added_count]} * ($date_added_count+1) )); then
     DATE_ADDED[$date_added_count]=$LINE
     ((date_added_count++))
   # Get car models
-  elif (( $count % 10 == 2 )); then
+  elif (( $count % 10 == 2 + ${HOW_MANY_PICS[$car_model_count]}*($car_model_count+1) )); then
     CAR_MODEL[$car_model_count]=$LINE
     ((car_model_count++))
   # Get car year
-  elif (( $count % 10 == 3 )); then
+  elif (( $count % 10 == 3 + ${HOW_MANY_PICS[$car_year_count]}*($car_year_count+1) )); then
     CAR_YEAR[$car_year_count]=$LINE
     ((car_year_count++))
   # Get car body styles
-  elif (( $count % 10 == 4 )); then
+  elif (( $count % 10 == 4 + ${HOW_MANY_PICS[$car_body_style_count]}*($car_body_style_count+1) )); then
     CAR_BODY_STYLE[$car_body_style_count]=$LINE
     ((car_body_style_count++))
   # Get car engine type
-  elif (( $count % 10 == 5 )); then
+  elif (( $count % 10 == 5 + ${HOW_MANY_PICS[$car_engine_count]}*($car_engine_count+1) )); then
     CAR_ENGINE[$car_engine_count]=$LINE
     ((car_engine_count++))
   # Get car transmission type
-  elif (( $count % 10 == 6 )); then
+  elif (( $count % 10 == 6 + ${HOW_MANY_PICS[$car_transmission_count]}*($car_transmission_count+1) )); then
     CAR_TRANSMISSION[$car_transmission_count]=$LINE
     ((car_transmission_count++))
   # Get car description
-  elif (( $count % 10 == 7 )); then
+  elif (( $count % 10 == 7 + ${HOW_MANY_PICS[$car_description_count]}*($car_description_count+1) )); then
     CAR_DESCRIPTION[$car_description_count]=$LINE
     ((car_description_count++))
   # Get stock numbers
-  elif (( $count % 10 == 9 )); then
+  elif (( $count % 10 == 9 + ${HOW_MANY_PICS[$car_stock_array_count]}*($car_stock_array_count+1) )); then
     CAR_STOCK_NUMBERS[$car_stock_array_count]=$LINE
     ((car_stock_array_count++))
   fi
 
   ((count++))
 done
+
+echo "******************************************************************************* Stock Nums: ${CAR_STOCK_NUMBERS[0]}"
+echo "******************************************************************************* Stock Nums: ${CAR_STOCK_NUMBERS[1]}"
+echo "******************************************************************************* Stock Nums: ${CAR_STOCK_NUMBERS[2]}"
+echo "******************************************************************************* Stock Nums: ${CAR_STOCK_NUMBERS[3]}"
 
 exec 0<&10 10<&-
 
