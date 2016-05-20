@@ -4,6 +4,7 @@
 
 touch email-body
 
+use_all_on_sale_items=1
 
 if [[ "$1" == "DEBUG" ]]; then
   DEBUG=1
@@ -136,29 +137,38 @@ sed -i "s@<br>@ - @g" tdtags_products_on_sale
 readarray FETCHED_ITEMS < ./tdtags_products_on_sale
 NUM_PRODUCTS_FOUND=0
 
-echo "Searching webpage for items of interest:"
-for PRODUCT in "${PRODUCTS[@]}"
-do
-  # Skip comments when parsing
-  [[ ${PRODUCT:0:1} == "#" ]] && continue
-  # Skip empty lines when parsing
-  [[ ${PRODUCT:1:1} == "" ]] && continue
+if (( $use_all_on_sale_items == 0 )); then
+  echo "Searching webpage for items of interest:"
+  for PRODUCT in "${PRODUCTS[@]}"
+  do
+    # Skip comments when parsing
+    [[ ${PRODUCT:0:1} == "#" ]] && continue
+    # Skip empty lines when parsing
+    [[ ${PRODUCT:1:1} == "" ]] && continue
 
-  # Remove trailing newline from the name
-  PRODUCT=$(echo ${PRODUCT} | tr -d '\n')
+    # Remove trailing newline from the name
+    PRODUCT=$(echo ${PRODUCT} | tr -d '\n')
 
-  # See if PRODUCT is found on the webpage
-  # If it is, print it to the console, and append it to email-body file.
+    # See if PRODUCT is found on the webpage
+    # If it is, print it to the console, and append it to email-body file.
+    for FETCHED_ITEM in "${FETCHED_ITEMS[@]}"
+    do
+      if [[ $FETCHED_ITEM =~ $PRODUCT ]]; then
+        echo -n "- $FETCHED_ITEM" >> email-body
+        echo -n "Found:  $FETCHED_ITEM"
+        ((NUM_PRODUCTS_FOUND++))
+      fi
+    done
+
+  done
+else
   for FETCHED_ITEM in "${FETCHED_ITEMS[@]}"
   do
-    if [[ $FETCHED_ITEM =~ $PRODUCT ]]; then
-      echo -n "- $FETCHED_ITEM" >> email-body
-      echo -n "Found:  $FETCHED_ITEM"
-      ((NUM_PRODUCTS_FOUND++))
-    fi
+    echo -n "- $FETCHED_ITEM" >> email-body
+    echo -n "Found:  $FETCHED_ITEM"
+    ((NUM_PRODUCTS_FOUND++))
   done
-
-done
+fi
 
 # No products found.
 if [[ $NUM_PRODUCTS_FOUND == 0 ]]; then
