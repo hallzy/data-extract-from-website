@@ -63,6 +63,14 @@ cp -f fetched_home_page_html fetched_home_page_tdtag_with_newline
 
 DATE_RANGE=$(command grep -Eo '[[:alpha:]]{3} [[:digit:]]{2}, [[:digit:]]{4} - [[:alpha:]]{3} [[:digit:]]{2}, [[:digit:]]{4}' fetched_home_page_tdtag_with_newline)
 
+# DATE_RANGE is not set therefore the site is probably down or not working
+if [ -z "$DATE_RANGE" ]; then
+  echo "Page is not working properly"
+  echo "The Pick a Part Website Appears to not be Working" > email-body
+  mutt -s "Pick a Part Alert FAILED" ${EMAILS[0]} < email-body
+  exit
+fi
+
 #}}}
 
 echo -e "http://www.pickapart.ca/\n\n" > email-body
@@ -172,7 +180,7 @@ fi
 
 # No products found.
 if [[ $NUM_PRODUCTS_FOUND == 0 ]]; then
-    echo "Pick a Part has nothing on sale this week ($DATE_RANGE) that you are looking for." > email-body
+    echo "Pick a Part has nothing on sale this week ($DATE_RANGE)." > email-body
 fi
 
 #remove duplicate entries in email-body
