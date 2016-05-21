@@ -6,7 +6,7 @@ git pull
 # bare bones check that this script started:
 DATE_VAR=$(date +%F)
 TIME_VAR=$(date +%H:%M:%S)
-echo "$DATE_VAR_$TIME_VAR" >> script_exec_started
+echo "${DATE_VAR} ${TIME_VAR}" >> script_exec_started
 
 # If there are no arguments, or the only argument is --email with a string after
 # it, then we can continue...
@@ -56,6 +56,7 @@ else
 fi
 
 # bare bones check that this script finished:
-cd -
-echo "$DATE_VAR_$TIME_VAR" >> script_exec_finish
+cd ~/Documents/git-repos/remote-github/data-extract-from-website
+rm -rf *.pdf
+echo "${DATE_VAR} ${TIME_VAR}" >> script_exec_finish
 
