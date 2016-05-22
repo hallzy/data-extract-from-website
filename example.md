@@ -18,7 +18,7 @@ Pick a Part has the following on sale from May 21, 2016 - May 27, 2016:
 
 
 
-# _______________________________________________________
+# ___________________________________________
 ## Saturn (12 On the Lot)
 ### New Saturns:
 |Pictures|Date Added|Model|Year|Body Style|Engine|Transmission|Description|Stock #|
@@ -35,7 +35,7 @@ Pick a Part has the following on sale from May 21, 2016 - May 27, 2016:
 
 
 
-# _______________________________________________________
+# ___________________________________________
 ## Caravan (28 On the Lot)
 ### New Caravans:
 |Pictures|Date Added|Model|Year|Body Style|Engine|Transmission|Description|Stock #|
