@@ -2,7 +2,7 @@
 
 # declare -a CARS=("Saturn" "Caravan")
 
-touch email-body
+touch email-body.md
 
 use_all_on_sale_items=1
 
@@ -54,8 +54,8 @@ if (( $flag == 1 )); then
   echo "Page Download Success"
 else
   echo "Page Download Failed"
-  echo "Script Failed to download on sale items" > email-body
-  mutt -s "Pick a Part Alert FAILED" ${EMAILS[0]} < email-body
+  echo "Script Failed to download on sale items" > email-body.md
+  mutt -s "Pick a Part Alert FAILED" ${EMAILS[0]} < email-body.md
   exit
 fi
 
@@ -63,9 +63,17 @@ cp -f fetched_home_page_html fetched_home_page_tdtag_with_newline
 
 DATE_RANGE=$(command grep -Eo '[[:alpha:]]{3} [[:digit:]]{2}, [[:digit:]]{4} - [[:alpha:]]{3} [[:digit:]]{2}, [[:digit:]]{4}' fetched_home_page_tdtag_with_newline)
 
+# DATE_RANGE is not set therefore the site is probably down or not working
+if [ -z "$DATE_RANGE" ]; then
+  echo "Page is not working properly"
+  echo "The Pick a Part Website Appears to not be Working" > email-body.md
+  mutt -s "Pick a Part Alert FAILED" ${EMAILS[0]} < email-body.md
+  exit
+fi
+
 #}}}
 
-echo -e "http://www.pickapart.ca/\n\n" > email-body
+echo -e "http://www.pickapart.ca/\n\n" > email-body.md
 # If no arguments were with the script, we can do this
 if [[ -z "$isCarOnly" ]]
 then
@@ -75,7 +83,10 @@ readarray PRODUCTS < ./products-to-look-for
 
 
 # -e lets the \n act as a newline character
-echo -e "Pick a Part has the following on sale from $DATE_RANGE:\n" >> email-body
+echo "# Automated Pickapart Update" >> email-body.md
+echo "Automated Pickapart Update" > email-body
+echo -e "Pick a Part has the following on sale from $DATE_RANGE:" >> email-body.md
+echo " " >> email-body.md
 
 
 
@@ -150,11 +161,11 @@ if (( $use_all_on_sale_items == 0 )); then
     PRODUCT=$(echo ${PRODUCT} | tr -d '\n')
 
     # See if PRODUCT is found on the webpage
-    # If it is, print it to the console, and append it to email-body file.
+    # If it is, print it to the console, and append it to email-body.md file.
     for FETCHED_ITEM in "${FETCHED_ITEMS[@]}"
     do
       if [[ $FETCHED_ITEM =~ $PRODUCT ]]; then
-        echo -n "- $FETCHED_ITEM" >> email-body
+        echo -n "* $FETCHED_ITEM" >> email-body.md
         echo -n "Found:  $FETCHED_ITEM"
         ((NUM_PRODUCTS_FOUND++))
       fi
@@ -164,7 +175,7 @@ if (( $use_all_on_sale_items == 0 )); then
 else
   for FETCHED_ITEM in "${FETCHED_ITEMS[@]}"
   do
-    echo -n "- $FETCHED_ITEM" >> email-body
+    echo -n "* $FETCHED_ITEM" >> email-body.md
     echo -n "Found:  $FETCHED_ITEM"
     ((NUM_PRODUCTS_FOUND++))
   done
@@ -172,11 +183,11 @@ fi
 
 # No products found.
 if [[ $NUM_PRODUCTS_FOUND == 0 ]]; then
-    echo "Pick a Part has nothing on sale this week ($DATE_RANGE) that you are looking for." > email-body
+    echo "Pick a Part has nothing on sale this week ($DATE_RANGE)." > email-body.md
 fi
 
-#remove duplicate entries in email-body
-awk '!a[$0]++' email-body > tmp && mv tmp email-body
+#remove duplicate entries in email-body.md
+awk '!a[$0]++' email-body.md > tmp && mv tmp email-body.md
 #}}}
 else
   # -1 will indicate that this part was never run, so I know whether or not to
@@ -202,8 +213,8 @@ if (( $flag == 1 )); then
   echo "Page Download Success"
 else
   echo "Page Download Failed"
-  echo "Script Failed to download car list" > email-body
-  mutt -s "Pick a Part Alert FAILED" ${EMAILS[0]} < email-body
+  echo "Script Failed to download car list" > email-body.md
+  mutt -s "Pick a Part Alert FAILED" ${EMAILS[0]} < email-body.md
   exit
 fi
 
@@ -517,23 +528,29 @@ done
 # or added.
 if (( "$old_car_array_count" > "0" || "$new_car_array_count" > "0" )); then
   if (( "$NUM_PRODUCTS_FOUND" != "-1" )); then
-    echo -e "\n\n" >> email-body
+    echo -e "\n\n" >> email-body.md
   fi
-  echo "=================================================" >> email-body
-  echo "${CAR}s -- ${num_of_cars_current} On the Lot" >> email-body
-  echo "=================================================" >> email-body
+  echo "# _______________________________________________________" >> email-body.md
+  echo " "
+  echo "## ${CAR} (${num_of_cars_current} On the Lot)" >> email-body.md
+  echo " "
 fi
 
 # Append new cars to email body#{{{
 
 if (( "$new_car_array_count" > "0" )); then
-  echo "New ${CAR}s on the Lot:" >> email-body
+  echo "### New ${CAR}s:" >> email-body.md
+
+  echo "|Date Added|Model|Year|Body Style|Engine|Transmission|Description|Stock #|" >> email-body.md
+  echo "|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|" >> email-body.md
+
+  for NEW_CAR in "${NEW_CARS_ARRAY[@]}"
+  do
+    echo "|${DATE_ADDED[${NEW_CAR}]}|${CAR_MODEL[${NEW_CAR}]}|${CAR_YEAR[${NEW_CAR}]}|${CAR_BODY_STYLE[${NEW_CAR}]}|${CAR_ENGINE[${NEW_CAR}]}|${CAR_TRANSMISSION[${NEW_CAR}]}|${CAR_DESCRIPTION[${NEW_CAR}]}|${CAR_STOCK_NUMBERS[${NEW_CAR}]}|" >> email-body.md
+
+  done
 fi
 
-for NEW_CAR in "${NEW_CARS_ARRAY[@]}"
-do
-  echo "   -  Added on ${DATE_ADDED[${NEW_CAR}]} - ${CAR_STOCK_NUMBERS[${NEW_CAR}]}: ${CAR_YEAR[${NEW_CAR}]} ${CAR_MODEL[${NEW_CAR}]} - ${CAR_BODY_STYLE[${NEW_CAR}]} - ${CAR_ENGINE[${NEW_CAR}]} - ${CAR_TRANSMISSION[${NEW_CAR}]} Transmission - ${CAR_DESCRIPTION[${NEW_CAR}]}" >> email-body
-done
 
 #}}}
 
@@ -541,15 +558,21 @@ done
 
 if (( "$old_car_array_count" > "0" )); then
   if (( "$new_car_array_count" > "0" )); then
-    echo -e "\n" >> email-body
+    echo -e "\n" >> email-body.md
   fi
-  echo "${CAR}s that have been removed from the lot:" >> email-body
+  echo " "
+  echo "### ${CAR}s that have been removed from the lot:" >> email-body.md
+
+  echo "|Model|Year|Body Style|Engine|Transmission|Description|Stock #|" >> email-body.md
+  echo "|:-:|:-:|:-:|:-:|:-:|:-:|:-:|" >> email-body.md
+
+  for OLD_CAR in "${OLD_CARS_ARRAY[@]}"
+  do
+    echo "|${OLD_CAR_MODEL[${OLD_CAR}]}|${OLD_CAR_YEAR[${OLD_CAR}]}|${OLD_CAR_BODY_STYLE[${OLD_CAR}]}|${OLD_CAR_ENGINE[${OLD_CAR}]}|${OLD_CAR_TRANSMISSION[${OLD_CAR}]}|${OLD_CAR_DESCRIPTION[${OLD_CAR}]}|${OLD_CAR_STOCK_NUMBERS[${OLD_CAR}]}|" >> email-body.md
+
+  done
 fi
 
-for OLD_CAR in "${OLD_CARS_ARRAY[@]}"
-do
-  echo "   -  ${OLD_CAR_STOCK_NUMBERS[${OLD_CAR}]}: ${OLD_CAR_YEAR[${OLD_CAR}]} ${OLD_CAR_MODEL[${OLD_CAR}]} - ${OLD_CAR_BODY_STYLE[${OLD_CAR}]} - ${OLD_CAR_ENGINE[${OLD_CAR}]} - ${OLD_CAR_TRANSMISSION[${OLD_CAR}]} Transmission - ${OLD_CAR_DESCRIPTION[${OLD_CAR}]}" >> email-body
-done
 
 #}}}
 
@@ -566,7 +589,7 @@ sendMail=1
 if (( "$old_car_total_count" == "0" && "$new_car_total_count" == "0" && "$NUM_PRODUCTS_FOUND" == "-1" )); then
   if (( "$DEBUG" == "1" )); then
     echo "This email would not send. This is a debug email"
-    echo "This email would not send. This is a debug email" >> email-body
+    echo "This email would not send. This is a debug email" >> email-body.md
     sendMail=1
   else
   sendMail=0
@@ -577,6 +600,13 @@ fi
 if (( "$sendMail" == "1" )); then
   # Used to echo if an email is commented
   COUNT=0
+
+  # Converting markdown to a pdf
+  echo "Converting email-body to a pdf..."
+  gimli -f email-body.md
+  DATE_VAR=$(date +%F)
+  TIME_VAR=$(date +%H)
+  mv email-body.pdf ${DATE_VAR}_${TIME_VAR}.pdf
   echo "Sending emails..."
   for EMAIL in "${EMAILS[@]}"
   do
@@ -592,9 +622,9 @@ if (( "$sendMail" == "1" )); then
 
     if (( "$NUM_PRODUCTS_FOUND" == "-1" )); then
       now=$(date +'%b %d, %Y')
-      mutt -s "Pick a Part Alert: $now" $EMAIL < email-body
+      mutt -s "Pick a Part Alert: $now" $EMAIL -a ${DATE_VAR}_${TIME_VAR}.pdf < email-body
     else
-      mutt -s "Pick a Part Alert: $DATE_RANGE" $EMAIL < email-body
+      mutt -s "Pick a Part Alert: $DATE_RANGE" $EMAIL -a ${DATE_VAR}_${TIME_VAR}.pdf < email-body
     fi
 
     # -n removes trailing newlines
