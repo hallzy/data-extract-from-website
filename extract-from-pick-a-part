@@ -36,6 +36,7 @@ then
   rm -rf README.md
   rm -rf script_exec_finish
   rm -rf script_exec_started
+  rm -rf example.md
 
   cd ../..
   rm -rf latest
