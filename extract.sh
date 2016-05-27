@@ -1,27 +1,14 @@
 #!/bin/bash
 
+source script-functions.sh
+
 cd ~/Documents/git-repos/remote-github/data-extract-from-website
 git pull
 
 # Run shellcheck to check for syntax errors in bash script. If any exist, in
 # either script file, exit and direct the user to the log files.
-shellcheck extract-from-pick-a-part > shellcheck.log
-shellcheck extract-from-pick-a-part-helper > shellcheck-helper.log
-failed=0
-
-if [ -s shellcheck.log ]; then
-  # File contains something, so execution failed
-  failed=1
-  echo "shellcheck failed. See shellcheck.log"
-fi
-
-if [ -s shellcheck-helper.log ]; then
-  # File contains something, so execution failed
-  failed=1
-  echo "shellcheck failed. See shellcheck-helper.log"
-fi
-
-if (( failed == 1 )); then
+run_shell_check
+if (( $? == 0 )); then
   exit
 fi
 
@@ -34,7 +21,6 @@ echo "${DATE_VAR} ${TIME_VAR}" >> script_exec_started
 # it, then we can continue...
 if [[ -z "$1" || ( "$1" == "--cars-only" ) ]]
 then
-
   LOG_FILE_NAME=data-extract-from-website.log
   PATH_TO_LOG_FILE=./logs/$DATE_VAR/$TIME_VAR/$LOG_FILE_NAME
 
@@ -43,23 +29,25 @@ then
   mkdir -p logs/"$DATE_VAR"/"$TIME_VAR"
   if [ "$1" == "--cars-only" ]
   then
-    time ./extract-from-pick-a-part-helper --cars-only | tee "$PATH_TO_LOG_FILE"
+    time ./extract-helper.sh --cars-only | tee "$PATH_TO_LOG_FILE"
   else
-    time ./extract-from-pick-a-part-helper | tee "$PATH_TO_LOG_FILE"
+    time ./extract-helper.sh | tee "$PATH_TO_LOG_FILE"
   fi
 
   cp ./* logs/"$DATE_VAR"/"$TIME_VAR"
 
   cd logs/"$DATE_VAR"/"$TIME_VAR"
-  rm -rf debug-extract-from-pick-a-part
-  rm -rf extract-from-pick-a-part
-  rm -rf extract-from-pick-a-part-helper
+  # Remove these from the newly created log folder
+  rm -rf *.sh
   rm -rf names-of-items-on-webpage
   rm -rf README.md
   rm -rf script_exec_finish
   rm -rf script_exec_started
   rm -rf example.md
+  rm -rf shellcheck-helper.log
+  rm -rf shellcheck.log
 
+  # Back to logs folder
   cd ../..
   rm -rf latest
   ln -fs "$DATE_VAR"/"$TIME_VAR" latest
@@ -71,8 +59,6 @@ then
   # vv Ignore shellcheck warning about using ls
   # shellcheck disable=SC2012
   ls -tp | tail -n +16 | xargs -d '\n' rm -rf --
-
-
 else
   echo " "
   echo "Usage: If no options are given, this script will run fully"
