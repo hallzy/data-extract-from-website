@@ -31,11 +31,11 @@ readarray EMAILS < ./emails
 
 # If debug is on, remove all emails except the first (which is mine)
 NUM_OF_EMAILS=${#EMAILS[@]}
-if (( $DEBUG == 1 )); then
+if (( DEBUG == 1 )); then
   debug_count=0
-  for((i=0;i<$NUM_OF_EMAILS;i++)); do
+  for((i=0;i<NUM_OF_EMAILS;i++)); do
     echo "debug_count = $debug_count"
-    if (( $debug_count > 0 )); then
+    if (( debug_count > 0 )); then
       EMAILS[$i]=""
       echo "EMAILS[i] = $EMAILS[$i]"
     fi
@@ -50,7 +50,7 @@ echo "Downloading webpage: http://www.pickapart.ca/"
 flag=0
 wget -O fetched_home_page_html "http://www.pickapart.ca/" && flag=1
 
-if (( $flag == 1 )); then
+if (( flag == 1 )); then
   echo "Page Download Success"
 else
   echo "Page Download Failed"
@@ -122,13 +122,13 @@ firstLine=0
 
 
 # make tdtags_products_on_sale file that contains only the useful information.
-for((i=0;i<$ELEMENTS;i++)); do
+for((i=0;i<ELEMENTS;i++)); do
   if [[ ${ARRAY[${i}]} =~ $regex ]] ; then
-    if [[ $firstLine<1 ]]; then
-      echo ${BASH_REMATCH[0]} > tdtags_products_on_sale
+    if (( firstLine < 1 )); then
+      echo "${BASH_REMATCH[0]}" > tdtags_products_on_sale
       let firstLine=$firstLine+1
     else
-      echo ${BASH_REMATCH[0]} >> tdtags_products_on_sale
+      echo "${BASH_REMATCH[0]}" >> tdtags_products_on_sale
     fi
   fi
 done
@@ -148,7 +148,7 @@ sed -i "s@<br>@ - @g" tdtags_products_on_sale
 readarray FETCHED_ITEMS < ./tdtags_products_on_sale
 NUM_PRODUCTS_FOUND=0
 
-if (( $use_all_on_sale_items == 0 )); then
+if (( use_all_on_sale_items == 0 )); then
   echo "Searching webpage for items of interest:"
   for PRODUCT in "${PRODUCTS[@]}"
   do
@@ -158,7 +158,7 @@ if (( $use_all_on_sale_items == 0 )); then
     [[ ${PRODUCT:1:1} == "" ]] && continue
 
     # Remove trailing newline from the name
-    PRODUCT=$(echo ${PRODUCT} | tr -d '\n')
+    PRODUCT=$(echo "${PRODUCT}" | tr -d '\n')
 
     # See if PRODUCT is found on the webpage
     # If it is, print it to the console, and append it to email-body.md file.
@@ -209,7 +209,7 @@ echo "Downloading car list from webpage: http://parts.pickapart.ca/index.php"
 flag=0
 curl --form-string 'md=submit' --form-string "model=${CAR}" 'http://parts.pickapart.ca/index.php' > "${CAR}_list_html" && flag=1
 
-if (( $flag == 1 )); then
+if (( flag == 1 )); then
   echo "Page Download Success"
 else
   echo "Page Download Failed"
@@ -226,7 +226,7 @@ dos2unix "${CAR}_list_html"
 declare -a ARRAY
 exec 10<&0
 fileName="${CAR}_list_html"
-exec < $fileName
+exec < "$fileName"
 let count=0
 
 # Each line gets stored in an array.
@@ -251,13 +251,13 @@ ELEMENTS=${#ARRAY[@]}
 firstLine=0
 
 
-for((i=0;i<$ELEMENTS;i++)); do
+for((i=0;i<ELEMENTS;i++)); do
   if [[ ${ARRAY[${i}]} =~ $regex ]] ; then
-    if [[ $firstLine<1 ]]; then
-      echo ${BASH_REMATCH[0]} > "${CAR}_tdtags_latest_cars"
+    if (( firstLine < 1 )); then
+      echo "${BASH_REMATCH[0]}" > "${CAR}_tdtags_latest_cars"
       let firstLine=$firstLine+1
     else
-      echo ${BASH_REMATCH[0]} >> "${CAR}_tdtags_latest_cars"
+      echo "${BASH_REMATCH[0]}" >> "${CAR}_tdtags_latest_cars"
     fi
   fi
 done
@@ -297,8 +297,7 @@ declare -a CAR_DESCRIPTION
 declare -a CAR_STOCK_NUMBERS
 exec 10<&0
 fileName="${CAR}_tdtags_latest_cars"
-exec < $fileName
-let pics_start_point_count=0
+exec < "$fileName"
 let date_added_count=0
 let car_model_count=0
 let car_year_count=0
@@ -314,7 +313,6 @@ let car_stock_array_count=0
 # We first need to look for URLs. These are the URLs for the Pictures.
 
 let count=0
-let looking_for_next_car=1
 let how_many_pics=0
 
 touch "${CAR}_image_links"
@@ -322,21 +320,20 @@ rm -rf "${CAR}_image_links"
 touch "${CAR}_image_links"
 
 let id=0
-let first_non_http=0
 let skip=10
 
 while read LINE; do
   # Get date added
-  if (( $skip < 10 )); then
+  if (( skip < 10 )); then
     ((skip++))
-  elif [[ "$LINE" =~ "http" ]] ; then
-    if (( $how_many_pics == 0 )); then
-      echo "vehicle $id" >> ${CAR}_image_links
+  elif [[ "$LINE" =~ http ]] ; then
+    if (( how_many_pics == 0 )); then
+      echo "vehicle $id" >> "${CAR}"_image_links
       PICS_START_POINT[$id]=$count
     fi
     ((how_many_pics++))
     URLS[$count]=$LINE
-    echo "$LINE" >> ${CAR}_image_links
+    echo "$LINE" >> "${CAR}"_image_links
   else
     skip=1
     HOW_MANY_PICS[$id]=$how_many_pics
@@ -354,7 +351,7 @@ exec 0<&10 10<&-
 
 exec 10<&0
 fileName="${CAR}_tdtags_latest_cars"
-exec < $fileName
+exec < "$fileName"
 
 # index 0 = Date added
 # index 1 = Make
@@ -374,35 +371,35 @@ exec < $fileName
 let count=0
 while read LINE; do
   # Get date added
-  if (( $count % 10 == 0 )); then
+  if (( count % 10 == 0 )); then
     DATE_ADDED[$date_added_count]=$LINE
     ((date_added_count++))
   # Get car models
-  elif (( $count % 10 == 2 )); then
+  elif (( count % 10 == 2 )); then
     CAR_MODEL[$car_model_count]=$LINE
     ((car_model_count++))
   # Get car year
-  elif (( $count % 10 == 3 )); then
+  elif (( count % 10 == 3 )); then
     CAR_YEAR[$car_year_count]=$LINE
     ((car_year_count++))
   # Get car body styles
-  elif (( $count % 10 == 4 )); then
+  elif (( count % 10 == 4 )); then
     CAR_BODY_STYLE[$car_body_style_count]=$LINE
     ((car_body_style_count++))
   # Get car engine type
-  elif (( $count % 10 == 5 )); then
+  elif (( count % 10 == 5 )); then
     CAR_ENGINE[$car_engine_count]=$LINE
     ((car_engine_count++))
   # Get car transmission type
-  elif (( $count % 10 == 6 )); then
+  elif (( count % 10 == 6 )); then
     CAR_TRANSMISSION[$car_transmission_count]=$LINE
     ((car_transmission_count++))
   # Get car description
-  elif (( $count % 10 == 7 )); then
+  elif (( count % 10 == 7 )); then
     CAR_DESCRIPTION[$car_description_count]=$LINE
     ((car_description_count++))
   # Get stock numbers
-  elif (( $count % 10 == 9 )); then
+  elif (( count % 10 == 9 )); then
     CAR_STOCK_NUMBERS[$car_stock_array_count]=$LINE
     ((car_stock_array_count++))
   fi
@@ -428,7 +425,7 @@ declare -a OLD_CAR_DESCRIPTION
 declare -a OLD_CAR_STOCK_NUMBERS
 exec 10<&0
 fileName="${CAR}_tdtags_old_cars"
-exec < $fileName
+exec < "$fileName"
 let old_car_model_count=0
 let old_car_year_count=0
 let old_car_body_style_count=0
@@ -443,31 +440,31 @@ let count=0
 
 while read LINE; do
   # Get car models
-  if (( $count % 10 == 2 )); then
+  if (( count % 10 == 2 )); then
     OLD_CAR_MODEL[$old_car_model_count]=$LINE
     ((old_car_model_count++))
   # Get car year
-  elif (( $count % 10 == 3 )); then
+  elif (( count % 10 == 3 )); then
     OLD_CAR_YEAR[$old_car_year_count]=$LINE
     ((old_car_year_count++))
   # Get car body styles
-  elif (( $count % 10 == 4 )); then
+  elif (( count % 10 == 4 )); then
     OLD_CAR_BODY_STYLE[$old_car_body_style_count]=$LINE
     ((old_car_body_style_count++))
   # Get car engine type
-  elif (( $count % 10 == 5 )); then
+  elif (( count % 10 == 5 )); then
     OLD_CAR_ENGINE[$old_car_engine_count]=$LINE
     ((old_car_engine_count++))
   # Get car transmission type
-  elif (( $count % 10 == 6 )); then
+  elif (( count % 10 == 6 )); then
     OLD_CAR_TRANSMISSION[$old_car_transmission_count]=$LINE
     ((old_car_transmission_count++))
   # Get car description
-  elif (( $count % 10 == 7 )); then
+  elif (( count % 10 == 7 )); then
     OLD_CAR_DESCRIPTION[$old_car_description_count]=$LINE
     ((old_car_description_count++))
   # Get stock numbers
-  elif (( $count % 10 == 9 )); then
+  elif (( count % 10 == 9 )); then
     OLD_CAR_STOCK_NUMBERS[$old_car_stock_array_count]=$LINE
     ((old_car_stock_array_count++))
   fi
@@ -557,10 +554,12 @@ fi
 # Append new cars to email body#{{{
 
 if (( "$new_car_array_count" > "0" )); then
-  echo "### New ${CAR}s:" >> email-body.md
+  {
+    echo "### New ${CAR}s:"
+    echo "|Pictures|Date Added|Model|Year|Body Style|Engine|Transmission|Description|Stock #|"
+    echo "|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|"
+  } >> email-body.md
 
-  echo "|Pictures|Date Added|Model|Year|Body Style|Engine|Transmission|Description|Stock #|" >> email-body.md
-  echo "|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|" >> email-body.md
 
 declare -a PICS_START_POINT
 declare -a URLS
@@ -574,8 +573,8 @@ declare -a HOW_MANY_PICS
     end_point=$((start_point+num_cars))
     pics=""
     pic_num=1
-    for((i=$start_point;i<$end_point;i++)); do
-      if (( $pic_num > 3 )); then
+    for((i=start_point;i<end_point;i++)); do
+      if (( pic_num > 3 )); then
         pic_num=1
       fi
       pics="$pics [$pic_num](${URLS[$i]})"
@@ -597,10 +596,12 @@ if (( "$old_car_array_count" > "0" )); then
     echo -e "\n" >> email-body.md
   fi
   echo " "
-  echo "### ${CAR}s that have been removed from the lot:" >> email-body.md
+  {
+    echo "### ${CAR}s that have been removed from the lot:"
+    echo "|Model|Year|Body Style|Engine|Transmission|Description|Stock #|"
+    echo "|:-:|:-:|:-:|:-:|:-:|:-:|:-:|"
+  } >> email-body.md
 
-  echo "|Model|Year|Body Style|Engine|Transmission|Description|Stock #|" >> email-body.md
-  echo "|:-:|:-:|:-:|:-:|:-:|:-:|:-:|" >> email-body.md
 
   for OLD_CAR in "${OLD_CARS_ARRAY[@]}"
   do
@@ -635,14 +636,14 @@ fi
 # only send mail, if sendMail is 1, or if debug is on.
 if (( "$sendMail" == "1" )); then
   # Used to echo if an email is commented
-  COUNT=0
+  # COUNT=0
 
   # Converting markdown to a pdf
   echo "Converting email-body to a pdf..."
   gimli -f email-body.md
   DATE_VAR=$(date +%F)
   TIME_VAR=$(date +%H)
-  mv email-body.pdf ${DATE_VAR}_${TIME_VAR}.pdf
+  mv email-body.pdf "${DATE_VAR}_${TIME_VAR}".pdf
   echo "Sending emails..."
   for EMAIL in "${EMAILS[@]}"
   do
@@ -658,9 +659,9 @@ if (( "$sendMail" == "1" )); then
 
     if (( "$NUM_PRODUCTS_FOUND" == "-1" )); then
       now=$(date +'%b %d, %Y')
-      mutt -s "Pick a Part Alert: $now" $EMAIL -a ${DATE_VAR}_${TIME_VAR}.pdf < email-body
+      mutt -s "Pick a Part Alert: $now" $EMAIL -a "${DATE_VAR}_${TIME_VAR}".pdf < email-body
     else
-      mutt -s "Pick a Part Alert: $DATE_RANGE" $EMAIL -a ${DATE_VAR}_${TIME_VAR}.pdf < email-body
+      mutt -s "Pick a Part Alert: $DATE_RANGE" $EMAIL -a "${DATE_VAR}_${TIME_VAR}".pdf < email-body
     fi
 
     # -n removes trailing newlines

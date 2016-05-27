@@ -3,6 +3,28 @@
 cd ~/Documents/git-repos/remote-github/data-extract-from-website
 git pull
 
+# Run shellcheck to check for syntax errors in bash script. If any exist, in
+# either script file, exit and direct the user to the log files.
+shellcheck extract-from-pick-a-part > shellcheck.log
+shellcheck extract-from-pick-a-part-helper > shellcheck-helper.log
+failed=0
+
+if [ -s shellcheck.log ]; then
+  # File contains something, so execution failed
+  failed=1
+  echo "shellcheck failed. See shellcheck.log"
+fi
+
+if [ -s shellcheck-helper.log ]; then
+  # File contains something, so execution failed
+  failed=1
+  echo "shellcheck failed. See shellcheck-helper.log"
+fi
+
+if (( failed == 1 )); then
+  exit
+fi
+
 # bare bones check that this script started:
 DATE_VAR=$(date +%F)
 TIME_VAR=$(date +%H:%M:%S)
@@ -17,18 +39,18 @@ then
   PATH_TO_LOG_FILE=./logs/$DATE_VAR/$TIME_VAR/$LOG_FILE_NAME
 
   mkdir -p logs
-  mkdir -p logs/$DATE_VAR
-  mkdir -p logs/$DATE_VAR/$TIME_VAR
+  mkdir -p logs/"$DATE_VAR"
+  mkdir -p logs/"$DATE_VAR"/"$TIME_VAR"
   if [ "$1" == "--cars-only" ]
   then
-    time ./extract-from-pick-a-part-helper --cars-only | tee $PATH_TO_LOG_FILE
+    time ./extract-from-pick-a-part-helper --cars-only | tee "$PATH_TO_LOG_FILE"
   else
-    time ./extract-from-pick-a-part-helper | tee $PATH_TO_LOG_FILE
+    time ./extract-from-pick-a-part-helper | tee "$PATH_TO_LOG_FILE"
   fi
 
-  cp * logs/$DATE_VAR/$TIME_VAR
+  cp ./* logs/"$DATE_VAR"/"$TIME_VAR"
 
-  cd logs/$DATE_VAR/$TIME_VAR
+  cd logs/"$DATE_VAR"/"$TIME_VAR"
   rm -rf debug-extract-from-pick-a-part
   rm -rf extract-from-pick-a-part
   rm -rf extract-from-pick-a-part-helper
@@ -40,12 +62,14 @@ then
 
   cd ../..
   rm -rf latest
-  ln -fs $DATE_VAR/$TIME_VAR latest
+  ln -fs "$DATE_VAR"/"$TIME_VAR" latest
 
   # Remove all but the logs from the last week... That is, all the logs from
   # the last 2 weeks do not get deleted  (1 folder a day, for 14 days plus
   # well as the symlink for the latest entry  ---  (1*14)+1 = 15 --- Use 16 in
   # script because it needs to be 1 more than the amount I need).
+  # vv Ignore shellcheck warning about using ls
+  # shellcheck disable=SC2012
   ls -tp | tail -n +16 | xargs -d '\n' rm -rf --
 
 
@@ -58,6 +82,6 @@ fi
 
 # bare bones check that this script finished:
 cd ~/Documents/git-repos/remote-github/data-extract-from-website
-rm -rf *.pdf
+rm -rf ./*.pdf
 echo "${DATE_VAR} ${TIME_VAR}" >> script_exec_finish
 
