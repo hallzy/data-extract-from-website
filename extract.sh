@@ -21,7 +21,7 @@ fi
 # bare bones check that this script started:
 DATE_VAR=$(date +%F)
 TIME_VAR=$(date +%H:%M:%S)
-echo "${DATE_VAR} ${TIME_VAR}" >> script_exec_started
+echo "${DATE_VAR} ${TIME_VAR}" > script_exec_started
 
 # If there are no arguments, or the only argument is --email with a string after
 # it, then we can continue...
@@ -48,7 +48,6 @@ then
   rm -rf names-of-items-on-webpage
   rm -rf README.md
   rm -rf script_exec_finish
-  rm -rf script_exec_started
   rm -rf example.md
   rm -rf shellcheck-helper.log
   rm -rf shellcheck.log
@@ -72,8 +71,11 @@ else
   echo " "
 fi
 
-# bare bones check that this script finished:
 cd ~/Documents/git-repos/remote-github/data-extract-from-website
+# Remove all pdf files from root dir
 rm -rf ./*.pdf
-echo "${DATE_VAR} ${TIME_VAR}" >> script_exec_finish
+
+# bare bones check that this script finished:
+echo "$(date +%F) $(date +%H:%M:%S)" > script_exec_finish
+cp script_exec_finish logs/"$DATE_VAR"/"$TIME_VAR"
 
