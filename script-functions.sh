@@ -6,8 +6,7 @@
 # Run shellcheck to check for syntax errors in bash script. If any exist, in
 # either script file, exit and direct the user to the log files.
 function run_shell_check {
-  shellcheck *.sh > shellcheck.log
-  failed=0
+  shellcheck ./*.sh > shellcheck.log
 
   if [ -s shellcheck.log ]; then
     # File contains something, so execution failed

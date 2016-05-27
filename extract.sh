@@ -38,7 +38,7 @@ then
 
   cd logs/"$DATE_VAR"/"$TIME_VAR"
   # Remove these from the newly created log folder
-  rm -rf *.sh
+  rm -rf ./*.sh
   rm -rf names-of-items-on-webpage
   rm -rf README.md
   rm -rf script_exec_finish
