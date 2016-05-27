@@ -82,11 +82,12 @@ then
 readarray PRODUCTS < ./products-to-look-for
 
 
-# -e lets the \n act as a newline character
-echo "# Automated Pickapart Update" >> email-body.md
 echo "Automated Pickapart Update" > email-body
-echo -e "Pick a Part has the following on sale from $DATE_RANGE:" >> email-body.md
-echo " " >> email-body.md
+{
+  echo "# Automated Pickapart Update"
+  echo "Pick a Part has the following on sale from $DATE_RANGE:"
+  echo " "
+} >> email-body.md
 
 
 

@@ -5,6 +5,12 @@ source script-functions.sh
 cd ~/Documents/git-repos/remote-github/data-extract-from-website
 git pull
 
+# if this function fails, we do not have the required dependencies, so quit.
+check_for_program_dependencies
+if (( $? == 0 )); then
+  exit
+fi
+
 # Run shellcheck to check for syntax errors in bash script. If any exist, in
 # either script file, exit and direct the user to the log files.
 run_shell_check
