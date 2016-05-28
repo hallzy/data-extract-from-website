@@ -1,8 +1,9 @@
 #!/bin/bash
 
+cd ~/Documents/git-repos/remote-github/data-extract-from-website
+
 source script-functions.sh
 
-cd ~/Documents/git-repos/remote-github/data-extract-from-website
 git pull
 
 # if this function fails, we do not have the required dependencies, so quit.
