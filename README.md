@@ -146,3 +146,13 @@ anyways at this time.
 Note that the car part will still run on friday as per the previous cronjob
 task, but it will also check for on sale items.
 
+NOTE: For gimli, it is installed by default in a directory that crontab cannot
+access. Add the path to cron by adding this line to cron after executing
+`crontab -e`:
+
+```bash
+PATH=<your paths to add>
+```
+
+By default the paths only contain `/bin` and `/usr/bin`
+
