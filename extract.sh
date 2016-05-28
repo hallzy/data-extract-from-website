@@ -51,6 +51,7 @@ then
   rm -rf example.md
   rm -rf shellcheck-helper.log
   rm -rf shellcheck.log
+  rm -rf ./*css
 
   # Back to logs folder
   cd ../..

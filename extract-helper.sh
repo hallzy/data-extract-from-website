@@ -641,7 +641,7 @@ if (( "$sendMail" == "1" )); then
 
   # Converting markdown to a pdf
   echo "Converting email-body to a pdf..."
-  gimli -f email-body.md
+  gimli -stylesheet github-markdown.css -f email-body.md
   DATE_VAR=$(date +%F)
   TIME_VAR=$(date +%H)
   mv email-body.pdf "${DATE_VAR}_${TIME_VAR}".pdf
