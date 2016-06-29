@@ -73,7 +73,7 @@ fi
 
 #}}}
 
-echo -e "http://www.pickapart.ca/\n\n" > email-body.md
+echo -e "http://www.pickapart.ca/\n\n" | tee email-body.md email-body > /dev/null
 # If no arguments were with the script, we can do this
 if [[ -z "$isCarOnly" ]]
 then
@@ -82,12 +82,13 @@ then
 readarray PRODUCTS < ./products-to-look-for
 
 
-echo "Automated Pickapart Update" > email-body
+echo "Automated Pickapart Update" >> email-body
+echo "# Automated Pickapart Update" >> email-body.md
+
 {
-  echo "# Automated Pickapart Update"
   echo "Pick a Part has the following on sale from $DATE_RANGE:"
   echo " "
-} >> email-body.md
+} | tee -a email-body.md email-body > /dev/null
 
 
 
@@ -167,6 +168,7 @@ if (( use_all_on_sale_items == 0 )); then
     do
       if [[ $FETCHED_ITEM =~ $PRODUCT ]]; then
         echo -n "* $FETCHED_ITEM" >> email-body.md
+        echo -n "- $FETCHED_ITEM" >> email-body
         echo -n "Found:  $FETCHED_ITEM"
         ((NUM_PRODUCTS_FOUND++))
       fi
@@ -177,6 +179,7 @@ else
   for FETCHED_ITEM in "${FETCHED_ITEMS[@]}"
   do
     echo -n "* $FETCHED_ITEM" >> email-body.md
+    echo -n "- $FETCHED_ITEM" >> email-body
     echo -n "Found:  $FETCHED_ITEM"
     ((NUM_PRODUCTS_FOUND++))
   done
@@ -184,11 +187,12 @@ fi
 
 # No products found.
 if [[ $NUM_PRODUCTS_FOUND == 0 ]]; then
-    echo "Pick a Part has nothing on sale this week ($DATE_RANGE)." > email-body.md
+    echo "Pick a Part has nothing on sale this week ($DATE_RANGE)." | tee -a email-body.md email-body > /dev/null
 fi
 
 #remove duplicate entries in email-body.md
 awk '!a[$0]++' email-body.md > tmp && mv tmp email-body.md
+awk '!a[$0]++' email-body > tmp && mv tmp email-body
 #}}}
 else
   # -1 will indicate that this part was never run, so I know whether or not to
@@ -544,17 +548,19 @@ done
 # or added.
 if (( "$old_car_array_count" > "0" || "$new_car_array_count" > "0" )); then
   if (( "$NUM_PRODUCTS_FOUND" != "-1" )); then
-    echo -e "\n\n" >> email-body.md
+    echo -e "\n\n" | tee -a email-body.md email-body > /dev/null
   fi
   echo "# _______________________________________________________" >> email-body.md
   echo " "
   echo "## ${CAR} (${num_of_cars_current} On the Lot)" >> email-body.md
+  echo "${CAR} (${num_of_cars_current} On the Lot)" >> email-body
   echo " "
 fi
 
 # Append new cars to email body#{{{
 
 if (( "$new_car_array_count" > "0" )); then
+  echo "  New ${CAR}s:" >> email-body
   {
     echo "### New ${CAR}s:"
     echo "|Pictures|Date Added|Model|Year|Body Style|Engine|Transmission|Description|Stock #|"
@@ -584,6 +590,8 @@ declare -a HOW_MANY_PICS
 
     echo "|$pics|${DATE_ADDED[${NEW_CAR}]}|${CAR_MODEL[${NEW_CAR}]}|${CAR_YEAR[${NEW_CAR}]}|${CAR_BODY_STYLE[${NEW_CAR}]}|${CAR_ENGINE[${NEW_CAR}]}|${CAR_TRANSMISSION[${NEW_CAR}]}|${CAR_DESCRIPTION[${NEW_CAR}]}|${CAR_STOCK_NUMBERS[${NEW_CAR}]}|" >> email-body.md
 
+    echo "    - Added on ${DATE_ADDED[${NEW_CAR}]} - ${CAR_YEAR[${NEW_CAR}]} ${CAR_MODEL[${NEW_CAR}]} - ${CAR_BODY_STYLE[${NEW_CAR}]} - ${CAR_ENGINE[${NEW_CAR}]} - ${CAR_TRANSMISSION[${NEW_CAR}]} Transmission - ${CAR_DESCRIPTION[${NEW_CAR}]} - ${CAR_STOCK_NUMBERS[${NEW_CAR}]}" >> email-body
+
   done
 fi
 
@@ -594,9 +602,10 @@ fi
 
 if (( "$old_car_array_count" > "0" )); then
   if (( "$new_car_array_count" > "0" )); then
-    echo -e "\n" >> email-body.md
+    echo -e "\n" | tee -a email-body.md email-body > /dev/null
   fi
   echo " "
+    echo "  ${CAR}s that have been removed from the lot:" >> email-body
   {
     echo "### ${CAR}s that have been removed from the lot:"
     echo "|Model|Year|Body Style|Engine|Transmission|Description|Stock #|"
@@ -607,6 +616,8 @@ if (( "$old_car_array_count" > "0" )); then
   for OLD_CAR in "${OLD_CARS_ARRAY[@]}"
   do
     echo "|${OLD_CAR_MODEL[${OLD_CAR}]}|${OLD_CAR_YEAR[${OLD_CAR}]}|${OLD_CAR_BODY_STYLE[${OLD_CAR}]}|${OLD_CAR_ENGINE[${OLD_CAR}]}|${OLD_CAR_TRANSMISSION[${OLD_CAR}]}|${OLD_CAR_DESCRIPTION[${OLD_CAR}]}|${OLD_CAR_STOCK_NUMBERS[${OLD_CAR}]}|" >> email-body.md
+
+    echo "    - ${OLD_CAR_YEAR[${OLD_CAR}]} ${OLD_CAR_MODEL[${OLD_CAR}]} - ${OLD_CAR_BODY_STYLE[${OLD_CAR}]} - ${OLD_CAR_ENGINE[${OLD_CAR}]} - ${OLD_CAR_TRANSMISSION[${OLD_CAR}]} Transmission - ${OLD_CAR_DESCRIPTION[${OLD_CAR}]} - ${OLD_CAR_STOCK_NUMBERS[${OLD_CAR}]}" >> email-body
 
   done
 fi
@@ -626,8 +637,7 @@ done
 sendMail=1
 if (( "$old_car_total_count" == "0" && "$new_car_total_count" == "0" && "$NUM_PRODUCTS_FOUND" == "-1" )); then
   if (( "$DEBUG" == "1" )); then
-    echo "This email would not send. This is a debug email"
-    echo "This email would not send. This is a debug email" >> email-body.md
+    echo "This email would not send. This is a debug email" | tee -a email-body.md email-body
     sendMail=1
   else
   sendMail=0
