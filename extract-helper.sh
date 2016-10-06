@@ -243,7 +243,7 @@ done
 exec 0<&10 10<&-
 
 # Used to find the lines we need.
-regex="<tr [[:print:]]*<a href=\"http[[:print:]]*</tr>"
+regex="<tr [[:print:]]*photo-group[[:print:]]*</tr>"
 #}}}
 
 # make tdtags file that contains only the useful information.#{{{
