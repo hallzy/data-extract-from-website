@@ -208,6 +208,9 @@ do
   CAR=${CAR//$'\n'/}
   rm -rf "${CAR}_tdtags_old_cars"
   cp "${CAR}_tdtags_latest_cars" "${CAR}_tdtags_old_cars"
+  if [ "$?" -eq 1 ]; then
+    touch "${CAR}_tdtags_old_cars"
+  fi
 # Find new or missing cars on the lot#{{{
 echo "Downloading car list from webpage: http://parts.pickapart.ca/index.php"
 # This submits a form on pickapart.ca to get a list of ${CAR}s in the lot.
