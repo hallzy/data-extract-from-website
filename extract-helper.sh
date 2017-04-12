@@ -630,6 +630,8 @@ fi
 
 unset NEW_CARS_ARRAY
 unset OLD_CARS_ARRAY
+unset CAR_STOCK_NUMBERS
+unset OLD_CAR_STOCK_NUMBERS
 
 #}}}
 done
